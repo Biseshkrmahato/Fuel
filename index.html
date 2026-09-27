@@ -72,6 +72,15 @@
   .header-log-btn { background: linear-gradient(135deg, var(--amber), #fbbf24); color: #0f1117; border: none; padding: 8px 16px; border-radius: 10px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px var(--amber-glow); transition: var(--trans); display: flex; align-items: center; gap: 6px;}
   .header-log-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
 
+  .gdrive-header-btn {
+    display: flex; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 14px 6px 10px; border-radius: 999px; font-family: var(--font-body);
+    font-size: 13px; font-weight: 600; cursor: pointer; transition: var(--trans); white-space: nowrap;
+  }
+  .gdrive-header-btn:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .gdrive-header-btn.connected { padding: 4px 14px 4px 4px; background: var(--bg2); }
+  .gdrive-header-btn .avatar-img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: block; }
+
   /* ── LAYOUT & GLOBAL FILTERS ── */
   main { max-width: 1400px; margin: 0 auto; padding: 36px 24px; }
   section { margin-bottom: 48px; }
@@ -305,6 +314,15 @@
     <select id="vehicleSelect" class="vehicle-select" onchange="changeVehicle()"></select>
     <button class="header-log-btn" onclick="document.getElementById('formPanel').scrollIntoView({behavior:'smooth'})">➕ Log</button>
     <span id="gdriveSyncBadge" style="font-family:var(--font-mono); font-size:11px; color:var(--text3);"></span>
+    <button id="gdriveHeaderBtn" class="gdrive-header-btn" onclick="gdriveHeaderClick()" title="Sign in with Google to back up to Drive">
+      <svg id="gdriveHeaderIcon" width="16" height="16" viewBox="0 0 48 48" style="flex-shrink:0;">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.4 35.4 26.8 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.6 39.7 16.2 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.5l6.3 5.3C40.9 36.5 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+      </svg>
+      <span id="gdriveHeaderLabel">Sign in</span>
+    </button>
     <button class="icon-btn" onclick="toggleTheme()" title="Toggle Light/Dark Mode" id="themeBtn">☀️</button>
     <button class="icon-btn" onclick="toggleSettingsMenu()" title="Settings & Data">⋮</button>
   </div>
@@ -790,6 +808,7 @@ const C = {
 /* ── INIT ── */
 function init() {
   loadGDriveConfig();
+  renderGDriveHeaderBtn();
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try { appData = JSON.parse(stored); } catch(e) { console.error("Corrupt data"); }
@@ -844,11 +863,11 @@ function seedData() {
    Requires the user to supply their own OAuth Client ID (see the modal), since
    this page has no server of its own to hold API credentials.
 */
-const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 const GDRIVE_FILE_NAME = 'fueliq-data.json';
 const GDRIVE_CONFIG_KEY = 'fueliq_gdrive_config';
 
-let gdrive = { clientId: null, fileId: null, token: null, tokenExpiresAt: 0, email: null, tokenClient: null };
+let gdrive = { clientId: null, fileId: null, token: null, tokenExpiresAt: 0, email: null, name: null, picture: null, tokenClient: null };
 let gdriveSyncTimer = null;
 
 function loadGDriveConfig() {
@@ -887,6 +906,40 @@ function renderGDriveStatus() {
   }
 }
 
+/* Header pill: "Sign in with Google" → avatar + first name once connected */
+function renderGDriveHeaderBtn() {
+  const btn = document.getElementById('gdriveHeaderBtn');
+  const icon = document.getElementById('gdriveHeaderIcon');
+  const label = document.getElementById('gdriveHeaderLabel');
+  if (!btn) return;
+  const connected = gdrive.token && Date.now() < gdrive.tokenExpiresAt;
+  btn.classList.toggle('connected', !!connected);
+  if (connected) {
+    btn.title = (gdrive.email ? gdrive.email + ' — ' : '') + 'Connected to Google Drive. Click to manage.';
+    label.textContent = (gdrive.name ? gdrive.name.split(' ')[0] : (gdrive.email || 'Connected'));
+    if (gdrive.picture) {
+      icon.outerHTML = `<img id="gdriveHeaderIcon" class="avatar-img" src="${gdrive.picture}" alt="">`;
+    }
+  } else {
+    btn.title = 'Sign in with Google to back up to Drive';
+    label.textContent = 'Sign in';
+    if (icon && icon.tagName === 'IMG') {
+      icon.outerHTML = `<svg id="gdriveHeaderIcon" width="16" height="16" viewBox="0 0 48 48" style="flex-shrink:0;">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.2l-6.3-5.3C29.4 35.4 26.8 36 24 36c-5.3 0-9.7-3.1-11.3-7.6l-6.5 5C9.6 39.7 16.2 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.1 5.5l6.3 5.3C40.9 36.5 44 30.8 44 24c0-1.3-.1-2.7-.4-3.5z"/>
+      </svg>`;
+    }
+  }
+}
+
+/* Clicking the header pill: jump straight to sign-in once a Client ID is saved, otherwise open setup */
+function gdriveHeaderClick() {
+  if (gdrive.token && Date.now() < gdrive.tokenExpiresAt) { openGDriveModal(); return; }
+  if (gdrive.clientId) { gdriveSignIn(); } else { openGDriveModal(); }
+}
+
 function saveGDriveClientId() {
   const id = document.getElementById('gdriveClientIdInput').value.trim();
   if (!id) { showToast('Enter a Client ID', 'error'); return; }
@@ -913,6 +966,8 @@ function gdriveSignIn() {
         gdrive.tokenExpiresAt = Date.now() + (resp.expires_in * 1000) - 60000;
         await fetchGDriveUserInfo();
         renderGDriveStatus();
+        renderGDriveHeaderBtn();
+        showToast(gdrive.name ? `Signed in as ${gdrive.name}` : 'Signed in with Google');
         await gdriveLocateOrLinkFile();
         renderGDriveStatus();
       }
@@ -922,8 +977,9 @@ function gdriveSignIn() {
 }
 
 function gdriveSignOut() {
-  gdrive.token = null; gdrive.tokenExpiresAt = 0; gdrive.email = null;
+  gdrive.token = null; gdrive.tokenExpiresAt = 0; gdrive.email = null; gdrive.name = null; gdrive.picture = null;
   renderGDriveStatus();
+  renderGDriveHeaderBtn();
   updateGDriveSyncBadge('');
   showToast('Disconnected from Drive — your local data is untouched');
 }
@@ -931,7 +987,12 @@ function gdriveSignOut() {
 async function fetchGDriveUserInfo() {
   try {
     const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + gdrive.token } });
-    if (r.ok) { const d = await r.json(); gdrive.email = d.email || null; }
+    if (r.ok) {
+      const d = await r.json();
+      gdrive.email = d.email || null;
+      gdrive.name = d.name || null;
+      gdrive.picture = d.picture || null;
+    }
   } catch(e) { /* non-fatal */ }
 }
 
