@@ -46,7 +46,7 @@ A single-file, installable-feeling web app for tracking fuel fill-ups, running c
 No install needed:
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo>.git
+git clone https://github.com/Biseshkrmahato/Fuel
 cd Biseshkrmahato/Fuel
 # just open the file in a browser
 open index.html        # macOS  (use xdg-open on Linux, or double-click on Windows)
@@ -132,4 +132,4 @@ Issues and pull requests are welcome. Because the app is one file, please keep c
 
 ## 📄 License
 
-Add your preferred license here (for example [MIT](https://choosealicense.com/licenses/mit/)).
+[MIT](https://choosealicense.com/licenses/mit/)).
