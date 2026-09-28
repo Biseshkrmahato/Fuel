@@ -58,7 +58,7 @@ open index.html        # macOS  (use xdg-open on Linux, or double-click on Windo
 1. Push the file to your repo (as `index.html`).
 2. Go to **Settings → Pages**.
 3. Under **Build and deployment**, choose **Deploy from a branch**, pick `main` and `/ (root)`, then **Save**.
-4. Your app will be live at `https://<your-username>.github.io/<your-repo>/`.
+4. Your app will be live at `(https://github.com/Biseshkrmahato/Fuel/)
 
 ### Install on your phone
 - **Android (Chrome):** menu ⋮ → **Add to Home screen**
