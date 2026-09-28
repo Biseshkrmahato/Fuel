@@ -451,15 +451,17 @@
     <button class="menu-item" onclick="openGDriveModal()">🔗 Google Drive Sync <span id="menuLastSync" style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:600;"></span></button>
     <button class="menu-item" onclick="toggleCalcMode()">⚙️ Calc Mode: <strong id="menuCalcMode" style="color:var(--amber);margin-left:auto;">Rolling Avg</strong></button>
     <button class="menu-item" id="rollingWindowMenuItem" onclick="cycleRollingWindow()">🔁 Rolling Window: <strong id="menuRollingWindow" style="color:var(--amber);margin-left:auto;">3 fills</strong></button>
-    <button class="menu-item" onclick="promptSetTarget()">🎯 Target KMPL: <strong id="menuTargetKmpl" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="promptSetTarget()">🎯 <span id="menuTargetLabel">Target KMPL</span>: <strong id="menuTargetKmpl" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
     <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
     <button class="menu-item" onclick="openReminderModal()">🔔 Manage Reminders</button>
     <button class="menu-item" onclick="promptSetBudget()">💰 Monthly Budget: <strong id="menuBudget" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
-    <button class="menu-item" onclick="promptSetTankCapacity()">⛽ Tank Capacity: <strong id="menuTankCap" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="promptSetTankCapacity()"><span id="menuTankLabel">⛽ Tank Capacity</span>: <strong id="menuTankCap" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="promptSetVehicleType()">🔌 Vehicle Type: <strong id="menuVehType" style="color:var(--amber);margin-left:auto;">Fuel</strong></button>
     <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
     <button class="menu-item" onclick="openAnnualSummary()">📅 Annual Summary</button>
     <button class="menu-item" onclick="window.print()">🖨️ Print Dashboard</button>
     <button class="menu-item" onclick="promptAddVehicle()">🚘 Add New Vehicle</button>
+    <button class="menu-item" onclick="promptDeleteVehicle()" style="color:var(--red);">🗑️ Delete Current Vehicle</button>
     <button class="menu-item" onclick="exportCSV()">📊 Export CSV</button>
     <label class="menu-item" style="margin:0;">
       📥 Import CSV (Bulk)
@@ -520,12 +522,12 @@
       <div class="kpi-card green">
         <div class="kpi-label">True Cost / KM</div>
         <div class="kpi-value" id="kTcoKm">—</div>
-        <div class="kpi-sub">Fuel + Other Expenses</div>
+        <div class="kpi-sub" id="subTco">Fuel + Other Expenses</div>
       </div>
       <div class="kpi-card blue">
-        <div class="kpi-label">Fuel Cost / KM</div>
+        <div class="kpi-label" id="lblCostKm">Fuel Cost / KM</div>
         <div class="kpi-value" id="kCostKm">—</div>
-        <div class="kpi-sub">Fuel only</div>
+        <div class="kpi-sub" id="subCostKm">Fuel only</div>
       </div>
       <div class="kpi-card purple">
         <div class="kpi-label">Total Distance</div>
@@ -533,7 +535,7 @@
         <div class="kpi-sub" id="kKmSub">from odometer</div>
       </div>
       <div class="kpi-card amber">
-        <div class="kpi-label">Total Fuel Spend</div>
+        <div class="kpi-label" id="lblFuelSpend">Total Fuel Spend</div>
         <div class="kpi-value" id="kFuelSpend">—</div>
         <div class="kpi-sub" id="kFillsSub">0 fills total</div>
       </div>
@@ -543,7 +545,7 @@
         <div class="kpi-sub" id="kExpenseSub">Service, tolls, etc.</div>
       </div>
       <div class="kpi-card blue">
-        <div class="kpi-label">Avg Fuel Price</div>
+        <div class="kpi-label" id="lblAvgPrice">Avg Fuel Price</div>
         <div class="kpi-value" id="kAvgPrice">—<span class="kpi-unit">₹/L</span></div>
         <div class="kpi-sub">Across period</div>
       </div>
@@ -558,7 +560,7 @@
         <div class="kpi-sub" id="kAvgMonthlyDistSub">— km/month avg</div>
       </div>
       <div class="kpi-card amber">
-        <div class="kpi-label">Last Fill</div>
+        <div class="kpi-label" id="lblLastFill">Last Fill</div>
         <div class="kpi-value" id="kDaysSinceFill">—<span class="kpi-unit">days ago</span></div>
         <div class="kpi-sub" id="kLastFillSub">No fuel logged yet</div>
       </div>
@@ -568,7 +570,7 @@
         <div class="kpi-sub" id="kRangeSub">Estimate</div>
       </div>
       <div class="kpi-card purple" id="nextFillCard" style="display:none;">
-        <div class="kpi-label">Next Fill Est. Odometer</div>
+        <div class="kpi-label" id="lblNextFill">Next Fill Est. Odometer</div>
         <div class="kpi-value" id="kNextFillOdo">—<span class="kpi-unit">km</span></div>
         <div class="kpi-sub" id="kNextFillSub">Estimate</div>
       </div>
@@ -594,19 +596,19 @@
             <line id="gaugeNeedle" x1="130" y1="140" x2="130" y2="45" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" transform="rotate(-90,130,140)"/>
             <circle cx="130" cy="140" r="8" fill="#f59e0b" filter="url(#glow)"/>
             <text x="14" y="160" fill="var(--text3)" font-size="12" font-family="Chakra Petch" font-weight="600">0</text>
-            <text x="120" y="20" fill="var(--text3)" font-size="12" font-family="Chakra Petch" font-weight="600" text-anchor="middle">10</text>
-            <text x="236" y="160" fill="var(--text3)" font-size="12" font-family="Chakra Petch" font-weight="600" text-anchor="end">20+</text>
+            <text id="gaugeTickMid" x="120" y="20" fill="var(--text3)" font-size="12" font-family="Chakra Petch" font-weight="600" text-anchor="middle">10</text>
+            <text id="gaugeTickMax" x="236" y="160" fill="var(--text3)" font-size="12" font-family="Chakra Petch" font-weight="600" text-anchor="end">20+</text>
             <text id="gaugeVal" x="130" y="116" fill="var(--text)" font-size="38" font-weight="700" font-family="Chakra Petch" text-anchor="middle">—</text>
-            <text x="130" y="136" fill="var(--text2)" font-size="14" font-family="Chakra Petch" text-anchor="middle" font-weight="600">KMPL</text>
+            <text id="gaugeUnit" x="130" y="136" fill="var(--text2)" font-size="14" font-family="Chakra Petch" text-anchor="middle" font-weight="600">KMPL</text>
           </svg>
         </div>
         <div class="gauge-info">
           <h3 id="gaugeLabel">No Valid Data</h3>
           <p id="gaugeDesc">Using Rolling Average mode — averages fuel purchased over your last few fills so a single top-up isn't assumed to start from an empty tank.</p>
           <div style="margin-top:20px; display:flex; gap:20px; flex-wrap:wrap; font-size:13px; font-weight:600; color:var(--text2);">
-            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);"></div>Poor (&lt;8)</div>
-            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);"></div>Average (8-14)</div>
-            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);"></div>Good (14+)</div>
+            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--red);box-shadow:0 0 8px var(--red);"></div><span id="legPoor">Poor (&lt;8)</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);"></div><span id="legAvg">Average (8-14)</span></div>
+            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);"></div><span id="legGood">Good (14+)</span></div>
           </div>
         </div>
       </div>
@@ -620,11 +622,11 @@
     
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">Monthly Spend (TCO) <span class="chart-subtitle">Fuel vs Other</span></div>
+        <div class="chart-title" id="ctSpend">Monthly Spend (TCO) <span class="chart-subtitle">Fuel vs Other</span></div>
         <div style="position:relative; height:240px;"><canvas id="spendChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Fuel Price Trend <span class="chart-subtitle">₹/L over time</span></div>
+        <div class="chart-title" id="ctPrice">Fuel Price Trend <span class="chart-subtitle">₹/L over time</span></div>
         <div style="position:relative; height:240px;"><canvas id="priceTrendChart"></canvas></div>
       </div>
     </div>
@@ -635,7 +637,7 @@
         <div style="position:relative; height:240px;"><canvas id="runChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Usage & Station Split <span class="chart-subtitle">% Breakdown</span></div>
+        <div class="chart-title" id="ctSplit">Usage & Station Split <span class="chart-subtitle">% Breakdown</span></div>
         <div class="pie-charts-wrap">
           <div class="pie-chart-col"><canvas id="usageChart"></canvas></div>
           <div class="pie-chart-col"><canvas id="stationChart"></canvas></div>
@@ -644,7 +646,7 @@
     </div>
 
     <div class="chart-card">
-      <div class="chart-title">Fuel Economy Trend <span class="chart-subtitle">Rolling avg KMPL per fill</span></div>
+      <div class="chart-title" id="ctEff">Fuel Economy Trend <span class="chart-subtitle">Rolling avg KMPL per fill</span></div>
       <div style="position:relative; height:250px;"><canvas id="kmplChart"></canvas></div>
     </div>
 
@@ -654,7 +656,7 @@
         <div style="position:relative; height:240px;"><canvas id="expenseCatChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Cost / KM Trend <span class="chart-subtitle">Monthly, Fuel vs TCO</span></div>
+        <div class="chart-title" id="ctCostTrend">Cost / KM Trend <span class="chart-subtitle">Monthly, Fuel vs TCO</span></div>
         <div style="position:relative; height:240px;"><canvas id="costTrendChart"></canvas></div>
       </div>
     </div>
@@ -665,7 +667,7 @@
         <div style="position:relative; height:240px;"><canvas id="odoChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title">Fill Interval Pattern <span class="chart-subtitle">Days between fills</span></div>
+        <div class="chart-title" id="ctInterval">Fill Interval Pattern <span class="chart-subtitle">Days between fills</span></div>
         <div style="position:relative; height:240px;"><canvas id="fillIntervalChart"></canvas></div>
       </div>
     </div>
@@ -677,7 +679,7 @@
 
     <div class="charts-grid">
       <div class="chart-card">
-        <div class="chart-title">Efficiency vs. Fuel Price <span class="chart-subtitle">KMPL per fill vs ₹/L paid</span></div>
+        <div class="chart-title" id="ctEffPrice">Efficiency vs. Fuel Price <span class="chart-subtitle">KMPL per fill vs ₹/L paid</span></div>
         <div style="position:relative; height:240px;"><canvas id="effPriceChart"></canvas></div>
       </div>
       <div class="chart-card">
@@ -693,7 +695,7 @@
       <span class="chart-subtitle">Across all vehicles · same time range as above</span>
     </div>
     <div class="chart-card">
-      <div class="chart-title">Avg Efficiency & Fuel Cost/km <span class="chart-subtitle">By Vehicle</span></div>
+      <div class="chart-title" id="ctCompare">Avg Efficiency & Fuel Cost/km <span class="chart-subtitle">By Vehicle</span></div>
       <div style="position:relative; height:280px;"><canvas id="vehicleCompareChart"></canvas></div>
     </div>
   </section>
@@ -711,7 +713,7 @@
 
       <div id="fuelFormWrap">
         <!-- Scan Receipt UI -->
-        <div class="scanner-ui-wrap">
+        <div class="scanner-ui-wrap" id="scannerWrap">
           <label class="btn-secondary" style="cursor: pointer;">
             📷 Scan Fuel Bill
             <input type="file" id="receiptScanner" accept="image/*" capture="environment" style="display: none;" onchange="processReceipt(event)">
@@ -722,8 +724,8 @@
         <div class="form-grid">
           <div class="form-group"><label>Date</label><input type="date" id="fDate"></div>
           <div class="form-group"><label>Odometer (km)</label><input type="number" id="fOdo" step="1" min="0" placeholder="Current reading"></div>
-          <div class="form-group"><label>Litres Added (L)</label><input type="number" id="fLitres" step="0.01" min="0" oninput="autoCalc()" placeholder="Volume"></div>
-          <div class="form-group"><label>Price per Litre (₹)</label><input type="number" id="fPpl" step="0.01" min="0" oninput="autoCalc()" placeholder="Rate"></div>
+          <div class="form-group"><label id="lblLitres">Litres Added (L)</label><input type="number" id="fLitres" step="0.01" min="0" oninput="autoCalc()" placeholder="Volume"></div>
+          <div class="form-group"><label id="lblPpl">Price per Litre (₹)</label><input type="number" id="fPpl" step="0.01" min="0" oninput="autoCalc()" placeholder="Rate"></div>
           <div class="form-group"><label>Total Amount (₹)</label><input type="number" id="fAmt" step="0.01" min="0" oninput="autoCalc('amt')" placeholder="Paid"></div>
           <div class="form-group">
             <label>Usage (Since last log)</label>
@@ -734,7 +736,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Station</label>
+            <label id="lblStation">Station</label>
             <select id="fStation">
               <option value="BPCL">BPCL</option>
               <option value="IOCL">IOCL</option>
@@ -746,23 +748,22 @@
             </select>
           </div>
           <div class="form-group">
-            <label>Fuel Type</label>
+            <label id="lblFuelType">Fuel Type</label>
             <select id="fFuelType">
               <option value="Petrol">Petrol</option>
               <option value="Diesel">Diesel</option>
               <option value="Premium">Premium/Speed</option>
               <option value="CNG">CNG</option>
-              <option value="EV">EV Charge</option>
             </select>
           </div>
           <div class="form-group">
-            <label>Range Left Before Refill (km) <span style="color:var(--text3); font-weight:500;">· optional</span></label>
+            <label><span id="lblRange">Range Left Before Refill (km)</span> <span style="color:var(--text3); font-weight:500;">· optional</span></label>
             <input type="number" id="fRangeLeft" step="1" min="0" placeholder="e.g. from dashboard DTE">
           </div>
         </div>
         <div style="display:flex; gap:24px; flex-wrap:wrap; margin-bottom:28px; padding:16px; background:var(--bg3); border-radius:12px; border:1px solid var(--border);">
           <label class="checkbox-group" title="Uncheck if you only partially filled the tank." id="fullTankWrap">
-            <input type="checkbox" id="fFullTank" checked> Full Tank? (Required for Strict KMPL)
+            <input type="checkbox" id="fFullTank" checked> <span id="fullTankText">Full Tank? (Required for Strict KMPL)</span>
           </label>
           <label class="checkbox-group" title="Check this if you forgot to log a previous fill-up. Breaks KMPL chain.">
             <input type="checkbox" id="fMissed"> Missed previous log?
@@ -829,7 +830,7 @@
             <th>Odometer</th>
             <th>Details</th>
             <th>Amount</th>
-            <th>KMPL</th>
+            <th id="thEff">KMPL</th>
             <th style="text-align:right;">Actions</th>
           </tr>
         </thead>
@@ -924,7 +925,8 @@ let charts = {};
 // Colors mapping
 const C = {
   amber: '#f59e0b', green: '#10b981', blue: '#3b82f6', purple: '#8b5cf6', red: '#ef4444', text3: '#64748b',
-  st: { 'BPCL':'#f59e0b', 'IOCL':'#3b82f6', 'HPCL':'#10b981', 'Jio-bp':'#8b5cf6', 'Shell':'#ef4444', 'Essar':'#f97316', 'Other':'#64748b' }
+  st: { 'BPCL':'#f59e0b', 'IOCL':'#3b82f6', 'HPCL':'#10b981', 'Jio-bp':'#8b5cf6', 'Shell':'#ef4444', 'Essar':'#f97316', 'Other':'#64748b',
+    'Home':'#10b981', 'Tata Power':'#3b82f6', 'Statiq':'#8b5cf6', 'Ather Grid':'#f59e0b', 'ChargeZone':'#ef4444', 'Jio-bp pulse':'#f97316' }
 };
 
 /* ── INIT ── */
@@ -1512,7 +1514,7 @@ function focusFirstIn(el) {
 
 function updateVehicleDropdown() {
   const sel = document.getElementById('vehicleSelect');
-  sel.innerHTML = appData.vehicles.map(v => `<option value="${v}">${v}</option>`).join('');
+  sel.innerHTML = appData.vehicles.map(v => `<option value="${v}">${isEV(v) ? '🔌 ' : ''}${v}</option>`).join('');
   sel.value = appData.settings.activeVehicle;
 }
 function changeVehicle() {
@@ -1521,11 +1523,62 @@ function changeVehicle() {
 }
 function promptAddVehicle() {
   const name = prompt("Enter new vehicle name (e.g. Royal Enfield):");
-  if (name && name.trim()) {
-    if(!appData.vehicles.includes(name.trim())) appData.vehicles.push(name.trim());
-    appData.settings.activeVehicle = name.trim();
-    save(); updateVehicleDropdown(); refreshUI(); showToast("Vehicle added!");
+  if (!name || !name.trim()) return;
+  const clean = name.trim();
+  if (appData.vehicles.includes(clean)) {
+    appData.settings.activeVehicle = clean;
+    save(); updateVehicleDropdown(); refreshUI(); showToast("That vehicle already exists — switched to it.");
+    return;
   }
+  const kind = prompt(`What powers "${clean}"?\n\n1 = Petrol / Diesel / CNG\n2 = Electric`, '1');
+  if (kind === null) return; // cancelling here cancels the add
+  const k = kind.trim() || '1';
+  if (k !== '1' && k !== '2') { showToast("Type 1 for fuel or 2 for electric — vehicle not added.", "error"); return; }
+  appData.vehicles.push(clean);
+  if (k === '2') getVehicleMeta(clean).type = 'ev';
+  appData.settings.activeVehicle = clean;
+  save(); updateVehicleDropdown(); currentPage = 1; refreshUI();
+  showToast(k === '2' ? "Electric vehicle added!" : "Vehicle added!");
+}
+
+function promptDeleteVehicle() {
+  document.getElementById('settingsMenu').classList.remove('show');
+  const v = appData.settings.activeVehicle;
+  if (appData.vehicles.length <= 1) { showToast("You can't delete your only vehicle — add another one first.", "error"); return; }
+  const nLogs = appData.logs.filter(l => l.vehicle === v).length;
+  const nRem = (appData.reminders || []).filter(r => r.vehicle === v).length;
+  const synced = gdrive && (gdrive.token || gdrive.everConnected);
+  const msg = `Delete "${v}" permanently?\n\nThis removes the vehicle and its ${nLogs} log entr${nLogs === 1 ? 'y' : 'ies'}` +
+    `${nRem ? `, ${nRem} reminder${nRem === 1 ? '' : 's'}` : ''}, capacity and budget. This cannot be undone.` +
+    `${synced ? '\n\nGoogle Drive sync is on, so the deletion will also reach your Drive backup on the next sync.' : ''}` +
+    `\n\nTip: cancel and use "Backup Data (JSON)" first if you might want it back.`;
+  if (!confirm(msg)) return;
+  appData.logs = appData.logs.filter(l => l.vehicle !== v);
+  appData.reminders = (appData.reminders || []).filter(r => r.vehicle !== v);
+  appData.vehicles = appData.vehicles.filter(x => x !== v);
+  if (appData.vehicleMeta) delete appData.vehicleMeta[v];
+  appData.settings.activeVehicle = appData.vehicles[0];
+  if (editingId && !appData.logs.some(l => l.id === editingId)) cancelEdit();
+  currentPage = 1;
+  save(); updateVehicleDropdown(); refreshUI();
+  showToast(`"${v}" deleted.`);
+}
+
+function promptSetVehicleType() {
+  document.getElementById('settingsMenu').classList.remove('show');
+  const v = appData.settings.activeVehicle;
+  const meta = getVehicleMeta(v);
+  const toEV = meta.type !== 'ev';
+  const nLogs = appData.logs.filter(l => l.vehicle === v && l.type === 'fuel').length;
+  const msg = `Switch "${v}" to ${toEV ? 'ELECTRIC (kWh, km/kWh)' : 'FUEL (litres, KMPL)'}?\n\n` +
+    (nLogs ? `Its ${nLogs} existing ${toEV ? 'fuel' : 'charging'} entr${nLogs === 1 ? 'y is' : 'ies are'} NOT converted — the old amounts will be read as ${toEV ? 'kWh' : 'litres'}. ` : '') +
+    `The ${toEV ? 'tank' : 'battery'} capacity and efficiency target for this vehicle will be cleared.`;
+  if (!confirm(msg)) return;
+  if (toEV) meta.type = 'ev'; else delete meta.type;
+  meta.tankCapacity = null;
+  meta.targetEff = null;
+  save(); updateVehicleDropdown(); refreshUI();
+  showToast(toEV ? "Switched to electric." : "Switched to fuel.");
 }
 
 function setTimeFilter(filter) {
@@ -1561,19 +1614,23 @@ function cycleRollingWindow() {
 }
 
 function promptSetTarget() {
-  const current = appData.settings.targetKmpl || '';
-  const val = prompt("Set your personal target KMPL (e.g. 18.5). Leave blank to clear it.", current);
+  const vehicle = appData.settings.activeVehicle;
+  const ev = isEV(vehicle);
+  const unit = ev ? 'km/kWh' : 'KMPL';
+  const current = getEffTarget(vehicle) || '';
+  const val = prompt(`Set your personal target ${unit}${ev ? ' for ' + vehicle : ''} (e.g. ${ev ? '6.5' : '18.5'}). Leave blank to clear it.`, current);
   if (val === null) return; // user cancelled
+  const setTarget = n => { if (ev) getVehicleMeta(vehicle).targetEff = n; else appData.settings.targetKmpl = n; };
   if (val.trim() === '') {
-    appData.settings.targetKmpl = null;
-    save(); refreshUI(); showToast("Target KMPL cleared.");
+    setTarget(null);
+    save(); refreshUI(); showToast(`Target ${unit} cleared.`);
     return;
   }
   const num = parseFloat(val);
   if (isNaN(num) || num <= 0) { showToast("Enter a valid positive number", "error"); return; }
-  appData.settings.targetKmpl = num;
+  setTarget(num);
   save(); refreshUI();
-  showToast(`Target set to ${num} KMPL`);
+  showToast(`Target set to ${num} ${unit}`);
 }
 
 function getVehicleMeta(vehicle) {
@@ -1582,17 +1639,92 @@ function getVehicleMeta(vehicle) {
   return appData.vehicleMeta[vehicle];
 }
 
+/* ── VEHICLE TYPE (fuel vs electric) ──
+   Stored per vehicle as vehicleMeta[v].type === 'ev' (absent = fuel). EV entries reuse the same
+   fields as fuel ones (litres = kWh added, ppl = ₹/kWh), so every calculation keeps working. */
+function isEV(vehicle) {
+  const m = appData.vehicleMeta && appData.vehicleMeta[vehicle || appData.settings.activeVehicle];
+  return !!(m && m.type === 'ev');
+}
+function vUnits(vehicle) {
+  return isEV(vehicle)
+    ? { ev: true,  energy: 'kWh', eff: 'km/kWh', price: '₹/kWh', fill: 'charge', fills: 'charges' }
+    : { ev: false, energy: 'L',   eff: 'KMPL',   price: '₹/L',   fill: 'fill',   fills: 'fills' };
+}
+// Gauge scale + colour bands. Cars use 0–10 km/kWh; if the average is above 10 it's clearly a two-wheeler → 0–40.
+function effBands(ev, ref) {
+  if (!ev) return { max: 20, mid: 10, poor: 8, good: 14, maxLabel: '20+' };
+  if (ref > 10) return { max: 40, mid: 20, poor: 15, good: 25, maxLabel: '40+' };
+  return { max: 10, mid: 5, poor: 4, good: 6, maxLabel: '10+' };
+}
+function getEffTarget(vehicle) {
+  vehicle = vehicle || appData.settings.activeVehicle;
+  if (isEV(vehicle)) return getVehicleMeta(vehicle).targetEff || null;
+  return appData.settings.targetKmpl || null;
+}
+function setSelectValue(id, val) {
+  const sel = document.getElementById(id);
+  if (val && !Array.from(sel.options).some(o => o.value === val)) sel.add(new Option(val, val)); // keeps legacy values (e.g. old "EV" fuel type) editable
+  sel.value = val;
+}
+let _uiMode = null;
+function applyVehicleModeUI(VU) {
+  const ev = VU.ev;
+  const T = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  const CT = (id, title, sub) => { const el = document.getElementById(id); if (el) el.innerHTML = `${title} <span class="chart-subtitle">${sub}</span>`; };
+  T('menuTargetLabel', ev ? 'Target km/kWh' : 'Target KMPL');
+  T('menuTankLabel', ev ? '🔋 Battery Capacity' : '⛽ Tank Capacity');
+  T('menuVehType', ev ? 'Electric' : 'Fuel');
+  T('lblCostKm', ev ? 'Charging Cost / KM' : 'Fuel Cost / KM');
+  T('subCostKm', ev ? 'Charging only' : 'Fuel only');
+  T('subTco', ev ? 'Charging + Other Expenses' : 'Fuel + Other Expenses');
+  T('lblFuelSpend', ev ? 'Total Charging Spend' : 'Total Fuel Spend');
+  T('lblAvgPrice', ev ? 'Avg Price / kWh' : 'Avg Fuel Price');
+  T('lblLastFill', ev ? 'Last Charge' : 'Last Fill');
+  T('lblNextFill', ev ? 'Next Charge Est. Odometer' : 'Next Fill Est. Odometer');
+  T('thEff', VU.eff);
+  CT('ctSpend', 'Monthly Spend (TCO)', ev ? 'Charging vs Other' : 'Fuel vs Other');
+  CT('ctPrice', ev ? 'Charging Price Trend' : 'Fuel Price Trend', `${VU.price} over time`);
+  CT('ctSplit', ev ? 'Usage & Network Split' : 'Usage & Station Split', '% Breakdown');
+  CT('ctEff', ev ? 'Efficiency Trend' : 'Fuel Economy Trend', `Rolling avg ${VU.eff} per ${VU.fill}`);
+  CT('ctCostTrend', 'Cost / KM Trend', ev ? 'Monthly, Charging vs TCO' : 'Monthly, Fuel vs TCO');
+  CT('ctInterval', ev ? 'Charge Interval Pattern' : 'Fill Interval Pattern', `Days between ${VU.fills}`);
+  CT('ctEffPrice', ev ? 'Efficiency vs. Charging Price' : 'Efficiency vs. Fuel Price', `${VU.eff} per ${VU.fill} vs ${VU.price} paid`);
+  // Log form
+  T('tabFuel', ev ? '🔌 Charging Session' : '⛽ Fuel Fill-up');
+  T('lblLitres', ev ? 'Energy Added (kWh)' : 'Litres Added (L)');
+  T('lblPpl', ev ? 'Price per kWh (₹)' : 'Price per Litre (₹)');
+  T('lblStation', ev ? 'Charging Network' : 'Station');
+  T('lblFuelType', ev ? 'Charging Type' : 'Fuel Type');
+  T('lblRange', ev ? 'Range Left Before Charging (km)' : 'Range Left Before Refill (km)');
+  T('fullTankText', ev ? 'Charged to 100%? (Required for Strict km/kWh)' : 'Full Tank? (Required for Strict KMPL)');
+  document.getElementById('fLitres').placeholder = ev ? 'kWh' : 'Volume';
+  document.getElementById('scannerWrap').style.display = ev ? 'none' : ''; // the scanner only reads fuel-pump bills
+  const mode = ev ? 'ev' : 'fuel';
+  if (_uiMode !== mode) { // rebuild the dropdown lists only when the vehicle type actually changes, so a half-filled form isn't reset
+    const opts = arr => arr.map(o => Array.isArray(o) ? `<option value="${o[0]}">${o[1]}</option>` : `<option value="${o}">${o}</option>`).join('');
+    document.getElementById('fStation').innerHTML = ev
+      ? opts(['Home', 'Tata Power', 'Statiq', 'Ather Grid', 'ChargeZone', 'Jio-bp pulse', 'Other'])
+      : opts(['BPCL', 'IOCL', 'HPCL', 'Jio-bp', 'Shell', ['Essar', 'Essar / Nayara'], 'Other']);
+    document.getElementById('fFuelType').innerHTML = ev
+      ? opts(['Home AC', 'Public AC', 'DC Fast'])
+      : opts([['Petrol', 'Petrol'], ['Diesel', 'Diesel'], ['Premium', 'Premium/Speed'], 'CNG']);
+    _uiMode = mode;
+  }
+}
+
 function promptSetTankCapacity() {
   const vehicle = appData.settings.activeVehicle;
   const meta = getVehicleMeta(vehicle);
-  const val = prompt(`Set tank capacity for ${vehicle} (litres). Leave blank to clear.\nUsed to estimate range remaining.`, meta.tankCapacity || '');
+  const ev = isEV(vehicle);
+  const val = prompt(`Set ${ev ? 'battery capacity' : 'tank capacity'} for ${vehicle} (${ev ? 'kWh' : 'litres'}). Leave blank to clear.\nUsed to estimate range remaining.`, meta.tankCapacity || '');
   if (val === null) return;
-  if (val.trim() === '') { meta.tankCapacity = null; save(); refreshUI(); showToast("Tank capacity cleared."); return; }
+  if (val.trim() === '') { meta.tankCapacity = null; save(); refreshUI(); showToast(ev ? "Battery capacity cleared." : "Tank capacity cleared."); return; }
   const num = parseFloat(val);
   if (isNaN(num) || num <= 0) { showToast("Enter a valid positive number", "error"); return; }
   meta.tankCapacity = num;
   save(); refreshUI();
-  showToast(`Tank capacity set to ${num}L`);
+  showToast(ev ? `Battery capacity set to ${num} kWh` : `Tank capacity set to ${num}L`);
 }
 
 function promptSetBudget() {
@@ -1932,13 +2064,16 @@ function refreshUI() {
   
   const isStrict = appData.settings.calcMode === 'strict';
   const rw = appData.settings.rollingWindow || 3;
-  document.getElementById('menuCalcMode').textContent = isStrict ? 'Strict (Full Tank)' : 'Rolling Avg';
-  document.getElementById('menuRollingWindow').textContent = `${rw} fills`;
+  const VU = vUnits();
+  applyVehicleModeUI(VU);
+  document.getElementById('menuCalcMode').textContent = isStrict ? (VU.ev ? 'Strict (Full Charge)' : 'Strict (Full Tank)') : 'Rolling Avg';
+  document.getElementById('menuRollingWindow').textContent = `${rw} ${VU.fills}`;
   document.getElementById('rollingWindowMenuItem').style.display = isStrict ? 'none' : 'flex';
   document.getElementById('fullTankWrap').style.display = isStrict ? 'flex' : 'none';
-  document.getElementById('menuTargetKmpl').textContent = appData.settings.targetKmpl ? `${appData.settings.targetKmpl} KMPL` : 'Not set';
+  const effTarget = getEffTarget();
+  document.getElementById('menuTargetKmpl').textContent = effTarget ? `${effTarget} ${VU.eff}` : 'Not set';
   const activeMeta = getVehicleMeta(appData.settings.activeVehicle);
-  document.getElementById('menuTankCap').textContent = activeMeta.tankCapacity ? `${activeMeta.tankCapacity}L` : 'Not set';
+  document.getElementById('menuTankCap').textContent = activeMeta.tankCapacity ? `${activeMeta.tankCapacity}${VU.ev ? ' kWh' : 'L'}` : 'Not set';
   document.getElementById('menuBudget').textContent = activeMeta.monthlyBudget ? `₹${activeMeta.monthlyBudget.toLocaleString('en-IN')}` : 'Not set';
   renderAlerts(appData.settings.activeVehicle);
 
@@ -1969,9 +2104,9 @@ function refreshUI() {
   const fRs = v => '₹' + Math.round(v||0).toLocaleString('en-IN');
   const fN = v => (v||0).toLocaleString('en-IN', {maximumFractionDigits:1});
 
-  document.getElementById('kAvgKmpl').innerHTML = avgKmpl ? fN(avgKmpl) + '<span class="kpi-unit">KMPL</span>' : '—';
+  document.getElementById('kAvgKmpl').innerHTML = avgKmpl ? fN(avgKmpl) + `<span class="kpi-unit">${VU.eff}</span>` : '—';
 
-  const target = appData.settings.targetKmpl;
+  const target = effTarget;
   if (target && avgKmpl) {
     const diff = avgKmpl - target;
     const diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(1);
@@ -1986,7 +2121,7 @@ function refreshUI() {
   if (rangeInfo) {
     rangeCard.style.display = '';
     document.getElementById('kRangeRemaining').innerHTML = fN(rangeInfo.remaining) + '<span class="kpi-unit">km</span>';
-    document.getElementById('kRangeSub').textContent = `Est. · ${fN(rangeInfo.remainingLitres)}L in tank · ${fN(rangeInfo.drivenSinceFull)}km since last fill on ${rangeInfo.lastFullDate}${rangeInfo.usedRangeLeft ? ' · calibrated w/ logged range-left' : ''}`;
+    document.getElementById('kRangeSub').textContent = `Est. · ${fN(rangeInfo.remainingLitres)}${VU.energy} in ${VU.ev ? 'battery' : 'tank'} · ${fN(rangeInfo.drivenSinceFull)}km since last ${VU.fill} on ${rangeInfo.lastFullDate}${rangeInfo.usedRangeLeft ? ' · calibrated w/ logged range-left' : ''}`;
   } else {
     rangeCard.style.display = 'none';
   }
@@ -1997,8 +2132,8 @@ function refreshUI() {
     nextFillCard.style.display = '';
     document.getElementById('kNextFillOdo').innerHTML = fN(nextFillInfo.odo) + '<span class="kpi-unit">km</span>';
     document.getElementById('kNextFillSub').textContent = nextFillInfo.basis === 'range'
-      ? `Based on ≈${fN(nextFillInfo.remainingLitres)}L left in tank × avg efficiency`
-      : 'Based on avg distance between fills';
+      ? `Based on ≈${fN(nextFillInfo.remainingLitres)}${VU.energy} left in ${VU.ev ? 'battery' : 'tank'} × avg efficiency`
+      : `Based on avg distance between ${VU.fills}`;
   } else {
     nextFillCard.style.display = 'none';
   }
@@ -2007,10 +2142,10 @@ function refreshUI() {
   document.getElementById('kTotalKm').innerHTML = totalDist ? fN(totalDist) + '<span class="kpi-unit">km</span>' : '—';
   document.getElementById('kFuelSpend').textContent = fRs(fuelSpend);
   document.getElementById('kOtherSpend').textContent = fRs(otherSpend);
-  document.getElementById('kAvgPrice').innerHTML = avgPrice ? fN(avgPrice) + '<span class="kpi-unit">₹/L</span>' : '—';
+  document.getElementById('kAvgPrice').innerHTML = avgPrice ? fN(avgPrice) + `<span class="kpi-unit">${VU.price}</span>` : '—';
   document.getElementById('kTotalSpend').textContent = fRs(totalSpend);
   
-  document.getElementById('kFillsSub').textContent = `${fillsCount} fills, ${fN(totalLitres)}L`;
+  document.getElementById('kFillsSub').textContent = `${fillsCount} ${VU.fills}, ${fN(totalLitres)}${VU.ev ? ' kWh' : 'L'}`;
 
   // Avg monthly spend & distance — spread totals across the distinct months present in the filtered logs
   const distinctMonths = new Set(logs.map(l => l.date.slice(0,7))).size || 1;
@@ -2027,7 +2162,7 @@ function refreshUI() {
     document.getElementById('kLastFillSub').textContent = `Logged ${lastFill.date}`;
   } else {
     document.getElementById('kDaysSinceFill').innerHTML = '—<span class="kpi-unit">days ago</span>';
-    document.getElementById('kLastFillSub').textContent = 'No fuel logged yet';
+    document.getElementById('kLastFillSub').textContent = VU.ev ? 'No charging logged yet' : 'No fuel logged yet';
   }
   
   updateGauge(avgKmpl, isStrict);
@@ -2042,23 +2177,33 @@ function updateGauge(kmpl, isStrict) {
   const val = document.getElementById('gaugeVal');
   const label = document.getElementById('gaugeLabel');
   const desc = document.getElementById('gaugeDesc');
-  
+
+  const VU = vUnits();
+  const b = effBands(VU.ev, kmpl);
+  document.getElementById('gaugeUnit').textContent = VU.eff;
+  document.getElementById('gaugeTickMid').textContent = b.mid;
+  document.getElementById('gaugeTickMax').textContent = b.maxLabel;
+  document.getElementById('legPoor').textContent = `Poor (<${b.poor})`;
+  document.getElementById('legAvg').textContent = `Average (${b.poor}-${b.good})`;
+  document.getElementById('legGood').textContent = `Good (${b.good}+)`;
+
   const rw = appData.settings.rollingWindow || 3;
   desc.textContent = isStrict
-    ? "Log at least two consecutive 'Full Tank' entries to see accurate efficiency."
-    : `Rolling Average mode — uses your last ${rw} fills together so one partial top-up (which doesn't mean the tank was empty) can't skew the number.`;
-  
+    ? (VU.ev ? "Log at least two consecutive 'Charged to 100%' entries to see accurate efficiency." : "Log at least two consecutive 'Full Tank' entries to see accurate efficiency.")
+    : (VU.ev ? `Rolling Average mode — uses your last ${rw} charges together so one partial top-up can't skew the number.`
+             : `Rolling Average mode — uses your last ${rw} fills together so one partial top-up (which doesn't mean the tank was empty) can't skew the number.`);
+
   if (!kmpl) {
     val.textContent = '—'; label.textContent = 'Need Data';
     fill.setAttribute('stroke-dasharray', `0 345`); needle.setAttribute('transform', `rotate(-90,130,140)`); return;
   }
-  
-  const ratio = Math.min(Math.max(kmpl / 20, 0), 1);
+
+  const ratio = Math.min(Math.max(kmpl / b.max, 0), 1);
   fill.setAttribute('stroke-dasharray', `${ratio * 345} 345`);
   needle.setAttribute('transform', `rotate(${-90 + ratio * 180},130,140)`);
   val.textContent = kmpl.toFixed(1);
-  label.textContent = kmpl < 8 ? 'Poor' : kmpl < 14 ? 'Average' : 'Excellent';
-  label.style.color = kmpl < 8 ? C.red : kmpl < 14 ? C.amber : C.green;
+  label.textContent = kmpl < b.poor ? 'Poor' : kmpl < b.good ? 'Average' : 'Excellent';
+  label.style.color = kmpl < b.poor ? C.red : kmpl < b.good ? C.amber : C.green;
 }
 
 /* ── CHARTS ── */
@@ -2080,6 +2225,7 @@ function chartsAvailable() {
 function renderCharts(logs, kmplData, outliers) {
   if (!chartsAvailable()) return;
   outliers = outliers || new Set();
+  const VU = vUnits();
   Chart.defaults.color = getCssVar('--text2');
   Chart.defaults.font.family = "'Chakra Petch', monospace";
   const gridColor = getCssVar('--border');
@@ -2101,7 +2247,7 @@ function renderCharts(logs, kmplData, outliers) {
     data: {
       labels: msKeys,
       datasets: [
-        { label: 'Fuel (₹)', data: msKeys.map(k=>monthSpend[k].fuel), backgroundColor: C.amber, borderRadius: 6, barPercentage: 0.6 },
+        { label: (VU.ev ? 'Charging' : 'Fuel') + ' (₹)', data: msKeys.map(k=>monthSpend[k].fuel), backgroundColor: C.amber, borderRadius: 6, barPercentage: 0.6 },
         { label: 'Other (₹)', data: msKeys.map(k=>monthSpend[k].other), backgroundColor: C.purple, borderRadius: 6, barPercentage: 0.6 }
       ]
     },
@@ -2114,7 +2260,7 @@ function renderCharts(logs, kmplData, outliers) {
     type: 'line',
     data: {
       labels: fuelLogs.map(l=>l.date.slice(5)),
-      datasets: [{ label: '₹/L', data: fuelLogs.map(l=>l.ppl), borderColor: C.blue, tension: 0.4, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: C.blue, borderWidth: 3 }]
+      datasets: [{ label: VU.price, data: fuelLogs.map(l=>l.ppl), borderColor: C.blue, tension: 0.4, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: C.blue, borderWidth: 3 }]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts }, plugins: { legend: {display:false}, tooltip: tooltipOpts } }
   });
@@ -2217,10 +2363,10 @@ function renderCharts(logs, kmplData, outliers) {
   sortedFuel.forEach(l => { if(kmplData[l.id]) { kLabels.push(l.date.slice(5)); kData.push(kmplData[l.id]); kIds.push(l.id); } });
   const kPointColors = kIds.map(id => outliers.has(id) ? C.red : C.amber);
   const kPointRadii = kIds.map(id => outliers.has(id) ? 8 : 5);
-  const target = appData.settings.targetKmpl;
+  const target = getEffTarget();
 
   const kmplDatasets = [{
-    label: 'KMPL', data: kData, borderColor: C.amber, backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4,
+    label: VU.eff, data: kData, borderColor: C.amber, backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4,
     pointRadius: kPointRadii, pointHoverRadius: kPointRadii.map(r=>r+3), pointBackgroundColor: kPointColors, borderWidth: 3
   }];
   if (target) {
@@ -2241,7 +2387,7 @@ function renderCharts(logs, kmplData, outliers) {
         tooltip: { ...tooltipOpts, callbacks: { label: ctx => {
           if (ctx.datasetIndex !== 0) return ` ${ctx.dataset.label}`;
           const flagged = outliers.has(kIds[ctx.dataIndex]);
-          return ` ${ctx.parsed.y.toFixed(2)} KMPL${flagged ? ' ⚠️ unusual vs. your data' : ''}`;
+          return ` ${ctx.parsed.y.toFixed(2)} ${VU.eff}${flagged ? ' ⚠️ unusual vs. your data' : ''}`;
         } } }
       }
     }
@@ -2294,7 +2440,7 @@ function renderCharts(logs, kmplData, outliers) {
     data: {
       labels: trendKeys,
       datasets: [
-        { label: 'Fuel ₹/km', data: trendFuelKm, borderColor: C.blue, backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, pointRadius: 4, pointHoverRadius: 7, pointBackgroundColor: C.blue, borderWidth: 3, spanGaps: true },
+        { label: (VU.ev ? 'Charging' : 'Fuel') + ' ₹/km', data: trendFuelKm, borderColor: C.blue, backgroundColor: 'rgba(59,130,246,0.1)', tension: 0.4, pointRadius: 4, pointHoverRadius: 7, pointBackgroundColor: C.blue, borderWidth: 3, spanGaps: true },
         { label: 'TCO ₹/km', data: trendTcoKm, borderColor: C.amber, backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, pointRadius: 4, pointHoverRadius: 7, pointBackgroundColor: C.amber, borderWidth: 3, spanGaps: true }
       ]
     },
@@ -2327,7 +2473,7 @@ function renderCharts(logs, kmplData, outliers) {
     type: 'bar',
     data: {
       labels: intervalLabels,
-      datasets: [{ label: 'Days since last fill', data: intervalData, backgroundColor: C.purple, borderRadius: 6, barPercentage: 0.6 }]
+      datasets: [{ label: `Days since last ${VU.fill}`, data: intervalData, backgroundColor: C.purple, borderRadius: 6, barPercentage: 0.6 }]
     },
     options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts }, plugins: { legend: {display:false}, tooltip: tooltipOpts } }
   });
@@ -2350,14 +2496,14 @@ function renderCharts(logs, kmplData, outliers) {
   if(charts.effPrice) charts.effPrice.destroy();
   charts.effPrice = new Chart(document.getElementById('effPriceChart'), {
     type: 'scatter',
-    data: { datasets: [{ label: 'KMPL vs ₹/L', data: effPricePoints, backgroundColor: C.blue, pointRadius: 6, pointHoverRadius: 9 }] },
+    data: { datasets: [{ label: `${VU.eff} vs ${VU.price}`, data: effPricePoints, backgroundColor: C.blue, pointRadius: 6, pointHoverRadius: 9 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
-        x: { ...axOpts, title: { display: true, text: '₹/L', color: getCssVar('--text3') } },
-        y: { ...axOpts, title: { display: true, text: 'KMPL', color: getCssVar('--text3') } }
+        x: { ...axOpts, title: { display: true, text: VU.price, color: getCssVar('--text3') } },
+        y: { ...axOpts, title: { display: true, text: VU.eff, color: getCssVar('--text3') } }
       },
-      plugins: { legend: { display: false }, tooltip: { ...tooltipOpts, callbacks: { label: ctx => `₹${ctx.parsed.x}/L → ${ctx.parsed.y.toFixed(1)} KMPL` } } }
+      plugins: { legend: { display: false }, tooltip: { ...tooltipOpts, callbacks: { label: ctx => `₹${ctx.parsed.x}/${VU.energy} → ${ctx.parsed.y.toFixed(1)} ${VU.eff}` } } }
     }
   });
 
@@ -2417,27 +2563,36 @@ function renderVehicleComparison() {
     vLogsInRange.forEach(l => { if (l.type === 'fuel') { fuelSpend += l.amt; if (kd[l.id]) kmplValues.push(kd[l.id]); } });
 
     perVehicle[v] = {
+      ev: isEV(v),
       avgKmpl: kmplValues.length ? kmplValues.reduce((a,b)=>a+b,0)/kmplValues.length : 0,
       costKm: dist ? fuelSpend / dist : 0
     };
   });
 
   const vNames = appData.vehicles;
+  const nEV = vNames.filter(v => perVehicle[v].ev).length;
+  const mixed = nEV > 0 && nEV < vNames.length;
+  const effUnit = mixed ? 'KMPL / km/kWh' : (nEV ? 'km/kWh' : 'KMPL');
+  const costLbl = mixed ? 'Energy ₹/km' : (nEV ? 'Charging ₹/km' : 'Fuel ₹/km');
+  const ctEl = document.getElementById('ctCompare');
+  if (ctEl) ctEl.innerHTML = mixed
+    ? 'Avg Efficiency & Running Cost/km <span class="chart-subtitle">KMPL and km/kWh share one axis and aren’t directly comparable — use the cost/km bars to compare</span>'
+    : `Avg Efficiency & ${nEV ? 'Charging' : 'Fuel'} Cost/km <span class="chart-subtitle">By Vehicle</span>`;
   if(charts.vehicleCompare) charts.vehicleCompare.destroy();
   charts.vehicleCompare = new Chart(document.getElementById('vehicleCompareChart'), {
     type: 'bar',
     data: {
       labels: vNames,
       datasets: [
-        { label: 'Avg KMPL', data: vNames.map(v=>+perVehicle[v].avgKmpl.toFixed(1)), backgroundColor: C.amber, borderRadius: 6, yAxisID: 'y', barPercentage: 0.5 },
-        { label: 'Fuel ₹/km', data: vNames.map(v=>+perVehicle[v].costKm.toFixed(2)), backgroundColor: C.blue, borderRadius: 6, yAxisID: 'y1', barPercentage: 0.5 }
+        { label: 'Avg ' + effUnit, data: vNames.map(v=>+perVehicle[v].avgKmpl.toFixed(1)), backgroundColor: C.amber, borderRadius: 6, yAxisID: 'y', barPercentage: 0.5 },
+        { label: costLbl, data: vNames.map(v=>+perVehicle[v].costKm.toFixed(2)), backgroundColor: C.blue, borderRadius: 6, yAxisID: 'y1', barPercentage: 0.5 }
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
         x: { grid: { color: getCssVar('--border') }, border: { display: false } },
-        y: { position: 'left', grid: { color: getCssVar('--border') }, border: { display: false }, title: { display: true, text: 'KMPL', color: getCssVar('--text2') } },
+        y: { position: 'left', grid: { color: getCssVar('--border') }, border: { display: false }, title: { display: true, text: effUnit, color: getCssVar('--text2') } },
         y1: { position: 'right', grid: { drawOnChartArea: false }, border: { display: false }, title: { display: true, text: '₹/km', color: getCssVar('--text2') } }
       },
       plugins: { legend: { position: 'top' }, tooltip: { backgroundColor: 'rgba(0,0,0,0.8)', padding: 12, cornerRadius: 8 } }
@@ -2450,6 +2605,10 @@ function refreshChartsOnly() { if(appData.logs.length) refreshUI(); }
 /* ── TABLE & PAGINATION ── */
 function renderTable(logs, kmplData, isStrict, outliers) {
   outliers = outliers || new Set();
+  const VU = vUnits();
+  const effVals = Object.values(kmplData);
+  const refEff = effVals.length ? effVals.reduce((a,b)=>a+b,0)/effVals.length : 0;
+  const tb = effBands(VU.ev, refEff);
   const tbody = document.getElementById('logBody');
   tbody.innerHTML = '';
   
@@ -2476,11 +2635,11 @@ function renderTable(logs, kmplData, isStrict, outliers) {
     let details = '', kmplHtml = '—';
     if(l.type === 'fuel') {
       const k = kmplData[l.id];
-      const kClass = k ? (k<8?'kmpl-bad':k<14?'kmpl-ok':'kmpl-good') : '';
+      const kClass = k ? (k<tb.poor?'kmpl-bad':k<tb.good?'kmpl-ok':'kmpl-good') : '';
       
       if (k) {
          kmplHtml = `<span class="kmpl-val ${kClass}">${k.toFixed(2)}</span>`;
-         if (outliers.has(l.id)) kmplHtml += ` <span title="Unusual vs. the rest of your data — worth double-checking the litres/odo on this entry" style="cursor:help;">⚠️</span>`;
+         if (outliers.has(l.id)) kmplHtml += ` <span title="Unusual vs. the rest of your data — worth double-checking the ${VU.ev ? 'kWh' : 'litres'}/odo on this entry" style="cursor:help;">⚠️</span>`;
       } else {
          if (isStrict) kmplHtml = l.fullTank ? '<span style="font-size:11px;color:var(--text3);">Pending</span>' : '<span style="font-size:11px;color:var(--text3);">Partial</span>';
          else kmplHtml = '<span style="font-size:11px;color:var(--text3);">N/A</span>';
@@ -2489,12 +2648,12 @@ function renderTable(logs, kmplData, isStrict, outliers) {
       if(l.missedPrev) kmplHtml = `<span title="Missed prev log" class="text-strike">Chain Broken</span>`;
       
       details = `<span class="badge" style="background:${C.st[l.station]||C.st['Other']}33; color:${C.st[l.station]||C.st['Other']}; margin-right:8px;">${l.station}</span>
-                 <span style="font-size:13px; font-weight:500;">${l.litres}L @ ₹${l.ppl}</span>
-                 ${(typeof l.rangeLeft === 'number' && !isNaN(l.rangeLeft)) ? `<span title="Range left on the dash before this refill — used to calibrate the fuel-in-tank estimate" style="cursor:help; font-size:11px; color:var(--text3); display:block; margin-top:4px;">⛽ ${l.rangeLeft}km left before fill</span>` : ''}`;
+                 <span style="font-size:13px; font-weight:500;">${l.litres}${VU.ev ? ' kWh' : 'L'} @ ₹${l.ppl}</span>
+                 ${(typeof l.rangeLeft === 'number' && !isNaN(l.rangeLeft)) ? `<span title="Range left on the dash before this ${VU.ev ? 'charge — used to calibrate the battery estimate' : 'refill — used to calibrate the fuel-in-tank estimate'}" style="cursor:help; font-size:11px; color:var(--text3); display:block; margin-top:4px;">⛽ ${l.rangeLeft}km left before fill</span>` : ''}`;
       
       tr.innerHTML = `
         <td style="font-weight:500;">${dStr}</td>
-        <td><span class="badge type-fuel">Fuel</span></td>
+        <td><span class="badge type-fuel">${VU.ev ? '⚡ Charge' : 'Fuel'}</span></td>
         <td style="font-family:var(--font-mono); font-weight:500;">${l.odo ? l.odo.toLocaleString()+' km' : '—'}</td>
         <td>${details}</td>
         <td style="font-family:var(--font-mono); font-weight:700; color:var(--amber);">₹${Math.round(l.amt).toLocaleString()}</td>
@@ -2636,8 +2795,8 @@ function editEntry(id) {
     document.getElementById('fLitres').value = e.litres;
     document.getElementById('fPpl').value = e.ppl;
     document.getElementById('fAmt').value = e.amt;
-    document.getElementById('fStation').value = e.station;
-    document.getElementById('fFuelType').value = e.fuel;
+    setSelectValue('fStation', e.station);
+    setSelectValue('fFuelType', e.fuel);
     document.getElementById('fUsage').value = e.usage;
     document.getElementById('fFullTank').checked = !!e.fullTank;
     document.getElementById('fMissed').checked = !!e.missedPrev;
@@ -2686,7 +2845,8 @@ function exportCSV() {
   const logs = getActiveLogs();
   if(!logs.length) { showToast("No data to export", "error"); return; }
   
-  let csv = "Date,Type,Odometer,Category/Fuel,Station,Litres,Price/L,Total Amt,Usage,Full Tank,Missed Prev,Notes\n";
+  const evx = isEV();
+  let csv = `Date,Type,Odometer,Category/${evx ? 'Charging Type' : 'Fuel'},${evx ? 'Network' : 'Station'},${evx ? 'kWh' : 'Litres'},${evx ? 'Price/kWh' : 'Price/L'},Total Amt,Usage,Full ${evx ? 'Charge' : 'Tank'},Missed Prev,Notes\n`;
   logs.forEach(l => {
     let row = [
       l.date, l.type, l.odo||'', l.type==='fuel'?l.fuel:l.category, l.station||'', 
@@ -2777,7 +2937,7 @@ function importBulkCSV(event) {
         if (typeRaw === 'fuel') {
           appData.logs.push({
             id, vehicle: appData.settings.activeVehicle, type: 'fuel', date,
-            odo: isNaN(odo) ? undefined : odo, fuel: (cols[3]||'Petrol').trim(), station: (cols[4]||'Other').trim(),
+            odo: isNaN(odo) ? undefined : odo, fuel: (cols[3]||(isEV() ? 'Home AC' : 'Petrol')).trim(), station: (cols[4]||'Other').trim(),
             litres: parseFloat(cols[5]) || 0, ppl: parseFloat(cols[6]) || 0, amt,
             usage: (cols[8]||'Mixed').trim(), fullTank: (cols[9]||'').trim().toLowerCase() === 'yes',
             missedPrev: (cols[10]||'').trim().toLowerCase() === 'yes'
@@ -2869,6 +3029,7 @@ function openAnnualSummary() {
 
   const vLogs = appData.logs.filter(l => l.vehicle === vehicle).sort((a,b) => new Date(a.date) - new Date(b.date));
   const kmplData = computeKmplEngine(vLogs);
+  const VU = vUnits(vehicle);
   const years = Array.from(new Set(vLogs.map(l => l.date.slice(0,4)))).sort();
 
   if (!years.length) {
@@ -2898,10 +3059,10 @@ function openAnnualSummary() {
       <div class="summary-grid">
         <div class="summary-cell"><div class="label">Total Spend</div><div class="value">₹${Math.round(spend).toLocaleString('en-IN')}</div></div>
         <div class="summary-cell"><div class="label">Distance</div><div class="value">${dist ? Math.round(dist).toLocaleString('en-IN')+' km' : '—'}</div></div>
-        <div class="summary-cell"><div class="label">Avg Efficiency</div><div class="value">${avgKmpl ? avgKmpl.toFixed(1)+' KMPL' : '—'}</div></div>
+        <div class="summary-cell"><div class="label">Avg Efficiency</div><div class="value">${avgKmpl ? avgKmpl.toFixed(1)+' '+VU.eff : '—'}</div></div>
         <div class="summary-cell"><div class="label">Cost / km</div><div class="value">${dist ? '₹'+(spend/dist).toFixed(1) : '—'}</div></div>
       </div>
-      ${bestMonth ? `<table class="summary-table"><tr><th></th><th>Month</th><th>Avg KMPL</th></tr>
+      ${bestMonth ? `<table class="summary-table"><tr><th></th><th>Month</th><th>Avg ${VU.eff}</th></tr>
         <tr><td>Best</td><td>${bestMonth[0]}</td><td>${bestMonth[1].toFixed(1)}</td></tr>
         <tr><td>Worst</td><td>${worstMonth[0]}</td><td>${worstMonth[1].toFixed(1)}</td></tr></table>` : '<p style="color:var(--text3); font-size:13px;">Not enough fills this year to rank months.</p>'}
     `;
