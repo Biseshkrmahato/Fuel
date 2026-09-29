@@ -343,11 +343,16 @@ Possible future improvements include:
 
 ## License
 
-No license has been specified for this repository yet.
+FuelIQ is released under the **MIT License**.
 
-If you want others to freely use, modify and redistribute FuelIQ, add an
-appropriate open-source license such as MIT. Otherwise, the repository
-remains subject to the default copyright position.
+Copyright (c) 2026 **biseshkrmahato**
+
+See the [`LICENSE`](LICENSE) file for the complete license text.
+
+The MIT License permits use, copying, modification, merging, publishing,
+distribution, sublicensing and sale of the software, subject to the
+license conditions and inclusion of the copyright notice and license
+text.
 
 ------------------------------------------------------------------------
 
