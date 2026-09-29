@@ -169,7 +169,9 @@
   .search-wrap input[type=search]::-webkit-search-cancel-button, .search-wrap input[type=search]::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
   .search-wrap input[type=search] { -webkit-appearance: none; appearance: none; min-width: 0; }
   
-  .log-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); overflow-x: auto; box-shadow: var(--shadow); -webkit-overflow-scrolling: touch; }
+  .log-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); overflow: hidden; box-shadow: var(--shadow); }
+  /* Only the table scrolls sideways — the pagination bar below stays put so Previous/Next are always reachable */
+  .log-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; min-width: 900px; }
   th { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--text3); text-align: left; padding: 16px 20px; background: rgba(0,0,0,0.1); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); white-space: nowrap; }
   td { font-size: 14px; padding: 16px 20px; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; transition: var(--trans); white-space: nowrap;}
@@ -189,6 +191,7 @@
   .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border); }
   .page-info { font-size: 13px; color: var(--text3); font-family: var(--font-mono); font-weight: 600;}
   .page-controls { display: flex; gap: 8px; }
+  .pagination { position: sticky; left: 0; gap: 12px; }
 
   /* ── MODALS & TOASTS ── */
   .toast { position: fixed; bottom: 30px; right: 30px; background: var(--bg2); border: 1px solid var(--border); color: var(--text); padding: 16px 24px; border-radius: 12px; font-family: var(--font-mono); font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(50px); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); pointer-events: none; z-index: 999; box-shadow: 0 15px 35px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 12px;}
@@ -409,6 +412,9 @@
     .time-filters::-webkit-scrollbar { display: none; }
     .t-btn { flex: 0 0 auto; padding: 8px 14px; font-size: 12px; text-align: center; white-space: nowrap; }
     .btn-primary, .btn-secondary { width: 100%; margin-top: 8px; }
+    .pagination { padding: 12px; flex-wrap: wrap; }
+    .page-controls { flex: 1 1 auto; justify-content: flex-end; }
+    .page-controls .btn-secondary { width: auto; margin-top: 0; flex: 1 1 0; padding: 12px 16px; }
 
     /* Keep "Fuel Fill-up" / "Other Expense" / "Trip" on one line each rather than an
        awkward mid-word wrap. */
@@ -421,6 +427,16 @@
     .gdrive-header-btn { padding: 8px; border-radius: 50%; }
     .gdrive-header-btn.connected { padding: 2px; }
   }
+
+  /* ── MONTHLY EMAIL REPORT ── */
+  .email-report-preview { background:var(--bg3); border:1px solid var(--border); border-radius:14px; padding:18px; }
+  .email-report-preview h3 { font-family:var(--font-mono); font-size:15px; margin-bottom:12px; }
+  .email-report-kpis { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .email-report-kpi { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:10px; }
+  .email-report-kpi .rlabel { font-size:10px; color:var(--text3); text-transform:uppercase; }
+  .email-report-kpi .rvalue { font-family:var(--font-mono); font-size:17px; font-weight:700; margin-top:4px; }
+  .email-report-note { margin-top:12px; color:var(--text2); font-size:12px; line-height:1.5; }
+
 </style>
 </head>
 <body>
@@ -459,6 +475,7 @@
     <button class="menu-item" onclick="promptSetVehicleType()">🔌 Vehicle Type: <strong id="menuVehType" style="color:var(--amber);margin-left:auto;">Fuel</strong></button>
     <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
     <button class="menu-item" onclick="openAnnualSummary()">📅 Annual Summary</button>
+    <button class="menu-item" onclick="openMonthlyReportModal()">📧 Monthly Email Report</button>
     <button class="menu-item" onclick="window.print()">🖨️ Print Dashboard</button>
     <button class="menu-item" onclick="promptAddVehicle()">🚘 Add New Vehicle</button>
     <button class="menu-item" onclick="promptDeleteVehicle()" style="color:var(--red);">🗑️ Delete Current Vehicle</button>
@@ -822,6 +839,7 @@
     </div>
     
     <div class="log-wrap">
+      <div class="log-scroll">
       <table>
         <thead>
           <tr>
@@ -836,6 +854,7 @@
         </thead>
         <tbody id="logBody"></tbody>
       </table>
+      </div>
       <div class="pagination">
         <div class="page-info" id="pageInfo">Page 1 of 1</div>
         <div class="page-controls">
@@ -884,6 +903,49 @@
     <div class="modal-close-row">
       <button class="btn-primary" onclick="window.print()">🖨️ Save as PDF / Print</button>
       <button class="btn-secondary" onclick="closeAnnualSummary()">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-overlay" id="monthlyReportModal">
+  <div class="modal-box">
+    <h2>📧 Monthly Email Report</h2>
+    <div class="modal-sub">Create a polished monthly FuelIQ summary and send it through your Google account.</div>
+
+    <div class="form-grid" style="margin-top:20px;">
+      <div class="form-group">
+        <label>Report Month</label>
+        <input type="month" id="reportMonth">
+      </div>
+      <div class="form-group">
+        <label>Vehicle</label>
+        <select id="reportVehicle"></select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Send To</label>
+        <input type="email" id="reportRecipient" placeholder="your@email.com">
+      </div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Apps Script Web App URL</label>
+        <input type="url" id="reportEndpoint" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+    </div>
+
+    <div class="alert-card" style="margin:8px 0 18px;">
+      <div class="alert-icon">🔐</div>
+      <div class="alert-text">
+        <strong>Google account</strong>
+        <div class="alert-sub" id="reportGoogleAccount">Sign in with Google above first. The monthly automation runs from your Google account via Apps Script.</div>
+      </div>
+    </div>
+
+    <div id="monthlyReportPreview" style="margin:12px 0 4px;"></div>
+
+    <div class="modal-close-row">
+      <button class="btn-secondary" onclick="previewMonthlyReport()">👁 Preview</button>
+      <button class="btn-primary" onclick="sendMonthlyReportNow()">✉️ Send Now</button>
+      <button class="btn-secondary" onclick="closeMonthlyReportModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1059,11 +1121,18 @@ function loadGDriveConfig() {
       gdrive.lastSyncedAt = cfg.lastSyncedAt || 0;
       gdrive.ownerEmail = cfg.ownerEmail || null;   // which Google account this device's data belongs to
       gdrive.dirty = !!cfg.dirty;                   // local changes not yet uploaded
+      // Remember who was signed in, so the header shows them straight away after a refresh
+      gdrive.email = cfg.email || null; gdrive.name = cfg.name || null; gdrive.picture = cfg.picture || null;
+      // Google access tokens last ~1 hour. If this one is still valid, reuse it — no prompt, no popup.
+      if (cfg.token && cfg.tokenExpiresAt && Date.now() < cfg.tokenExpiresAt) {
+        gdrive.token = cfg.token; gdrive.tokenExpiresAt = cfg.tokenExpiresAt;
+      }
     }
   } catch(e) { /* ignore corrupt config */ }
 }
 function saveGDriveConfig() {
-  localStorage.setItem(GDRIVE_CONFIG_KEY, JSON.stringify({ fileId: gdrive.fileId, everConnected: gdrive.everConnected, lastSyncedAt: gdrive.lastSyncedAt, ownerEmail: gdrive.ownerEmail, dirty: gdrive.dirty }));
+  localStorage.setItem(GDRIVE_CONFIG_KEY, JSON.stringify({ fileId: gdrive.fileId, everConnected: gdrive.everConnected, lastSyncedAt: gdrive.lastSyncedAt, ownerEmail: gdrive.ownerEmail, dirty: gdrive.dirty,
+    email: gdrive.email, name: gdrive.name, picture: gdrive.picture, token: gdrive.token, tokenExpiresAt: gdrive.tokenExpiresAt }));
 }
 
 function openGDriveModal() {
@@ -1138,10 +1207,11 @@ function renderGDriveHeaderBtn() {
   const icon = document.getElementById('gdriveHeaderIcon');
   const label = document.getElementById('gdriveHeaderLabel');
   if (!btn) return;
-  const connected = gdrive.token && Date.now() < gdrive.tokenExpiresAt;
+  const tokenOk = gdrive.token && Date.now() < gdrive.tokenExpiresAt;
+  const connected = tokenOk || (gdrive.everConnected && gdrive.email);   // known user: don't flash "Sign in" on refresh
   btn.classList.toggle('connected', !!connected);
   if (connected) {
-    btn.title = (gdrive.email ? gdrive.email + ' — ' : '') + 'Connected to Google Drive. Click to manage.';
+    btn.title = (gdrive.email ? gdrive.email + ' — ' : '') + (tokenOk ? 'Connected to Google Drive. Click to manage.' : 'Reconnecting to Google… tap to manage.');
     label.textContent = (gdrive.name ? gdrive.name.split(' ')[0] : (gdrive.email || 'Connected'));
     if (gdrive.picture) {
       icon.outerHTML = `<img id="gdriveHeaderIcon" class="avatar-img" src="${gdrive.picture}" alt="">`;
@@ -1162,7 +1232,7 @@ function renderGDriveHeaderBtn() {
 
 /* Clicking the header pill: sign in if signed out, otherwise open the sync details */
 function gdriveHeaderClick() {
-  if (gdrive.token && Date.now() < gdrive.tokenExpiresAt) openGDriveModal(); else gdriveSignIn();
+  if ((gdrive.token && Date.now() < gdrive.tokenExpiresAt) || (gdrive.everConnected && gdrive.email)) openGDriveModal(); else gdriveSignIn();
 }
 /* One token client for the whole page. Its callback never changes, so a silent token refresh
    can't accidentally replace the "signed in" behaviour (as it could when callbacks were swapped). */
@@ -1193,7 +1263,7 @@ function gdriveSignIn() {
   }
   gdriveInteractive = true;
   gdriveSessionStarted = false;   // a fresh sign-in (possibly a different account) always re-checks Drive
-  gdrive.tokenClient.requestAccessToken({ prompt: 'select_account' });
+  gdrive.tokenClient.requestAccessToken(gdrive.everConnected && gdrive.email ? { prompt: '', login_hint: gdrive.email } : { prompt: 'select_account' });
 }
 
 function gdriveOnToken(resp) {
@@ -1202,6 +1272,7 @@ function gdriveOnToken(resp) {
   if (!resp || resp.error || !resp.access_token) { waiters.forEach(w => w(false)); gdriveInteractive = false; return; }
   gdrive.token = resp.access_token;
   gdrive.tokenExpiresAt = Date.now() + (resp.expires_in * 1000) - 60000;
+  saveGDriveConfig();   // survives a page refresh
   waiters.forEach(w => w(true));
   if (!gdriveSessionStarted) gdriveStartSession();   // otherwise it was just a background refresh
 }
@@ -1210,9 +1281,12 @@ function gdriveOnToken(resp) {
 async function gdriveStartSession() {
   gdriveSessionStarted = true;
   await fetchGDriveUserInfo();
+  if (!gdrive.token) {   // saved token turned out to be dead → fall back to a silent refresh
+    gdriveSessionStarted = false; renderGDriveStatus(); renderGDriveHeaderBtn(); attemptSilentGDriveReconnect(); return;
+  }
   if (!gdrive.email) {
     // Without knowing who signed in we can't tell whose data is on this device — don't risk mixing accounts.
-    gdriveSessionStarted = false; gdrive.token = null; gdriveInteractive = false;
+    gdriveSessionStarted = false; gdrive.token = null; gdriveInteractive = false; saveGDriveConfig();
     showToast('Couldn\'t confirm your Google account — please try signing in again', 'error');
     renderGDriveStatus(); renderGDriveHeaderBtn();
     return;
@@ -1255,8 +1329,10 @@ async function fetchGDriveUserInfo() {
       gdrive.email = d.email || null;
       gdrive.name = d.name || null;
       gdrive.picture = d.picture || null;
+    } else if (r.status === 401) {
+      gdrive.token = null; gdrive.tokenExpiresAt = 0; saveGDriveConfig();   // saved token was revoked/expired
     }
-  } catch(e) { /* non-fatal */ }
+  } catch(e) { /* non-fatal — keep any cached email/name so an offline refresh still works */ }
 }
 
 function gdriveEnsureToken() {
@@ -1430,6 +1506,10 @@ function queueGDriveSync() {
 function onGsiLoad() { gsiReady = true; attemptSilentGDriveReconnect(); }
 
 function attemptSilentGDriveReconnect() {
+  if (gdrive.token && Date.now() < gdrive.tokenExpiresAt) {
+    if (!gdriveSessionStarted) gdriveStartSession();   // restored from the last visit — already signed in
+    return;
+  }
   if (!gsiReady && window.google && google.accounts && google.accounts.oauth2) gsiReady = true;
   if (!gsiReady || !gdrive.everConnected || gdrive.token || gdriveSilentPending) return;
   if (!gdriveInitTokenClient()) return;
@@ -3020,6 +3100,183 @@ function markReminderDone(id) {
   const r = (appData.reminders || []).find(r => r.id === id);
   if (r) { r.dismissed = true; save(); renderReminderList(); refreshUI(); showToast("Marked done"); }
 }
+
+
+/* ── MONTHLY EMAIL REPORT ──
+   The browser prepares the report context. Gmail delivery and recurring scheduling
+   are intentionally handled by Google Apps Script so the report can run when this
+   page is closed.
+*/
+function reportMonthValue() {
+  const el = document.getElementById('reportMonth');
+  return el ? el.value : '';
+}
+
+function getMonthlyReportData(vehicle, month) {
+  vehicle = vehicle || appData.settings.activeVehicle;
+  month = month || new Date().toISOString().slice(0,7);
+
+  const rawLogs = appData.logs
+    .filter(l => l.vehicle === vehicle)
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+  const monthLogs = rawLogs.filter(l => String(l.date || '').slice(0,7) === month);
+  const kmplData = computeKmplEngine(rawLogs);
+  const fuelLogs = monthLogs.filter(l => l.type === 'fuel').sort((a,b) => (a.odo||0)-(b.odo||0));
+  const otherLogs = monthLogs.filter(l => l.type !== 'fuel');
+
+  const fuelSpend = fuelLogs.reduce((s,l)=>s+(Number(l.amt)||0),0);
+  const otherSpend = otherLogs.reduce((s,l)=>s+(Number(l.amt)||0),0);
+  const totalSpend = fuelSpend + otherSpend;
+  const litres = fuelLogs.reduce((s,l)=>s+(Number(l.litres)||0),0);
+
+  const kmplValues = fuelLogs.map(l=>kmplData[l.id]).filter(v=>typeof v==='number' && isFinite(v));
+  const avgKmpl = kmplValues.length ? kmplValues.reduce((a,b)=>a+b,0)/kmplValues.length : null;
+  const avgPrice = litres ? fuelSpend/litres : null;
+
+  // Use odometer readings around the month so the distance figure reflects the
+  // month's odometer movement rather than only the month's fill-ups.
+  const odoPoints = rawLogs.filter(l => typeof l.odo === 'number' && isFinite(l.odo));
+  const before = odoPoints.filter(l => String(l.date||'') < month).slice(-1)[0];
+  const during = odoPoints.filter(l => String(l.date||'').slice(0,7) === month);
+  const after = odoPoints.filter(l => String(l.date||'').slice(0,7) <= month).slice(-1)[0];
+  let distance = null;
+  if (before && after && after.odo >= before.odo) distance = after.odo - before.odo;
+  else if (during.length >= 2) distance = Math.max(...during.map(l=>l.odo)) - Math.min(...during.map(l=>l.odo));
+
+  const costKm = distance > 0 ? fuelSpend/distance : null;
+  const tcoKm = distance > 0 ? totalSpend/distance : null;
+  const meta = getVehicleMeta(vehicle);
+  const budget = Number(meta.monthlyBudget) || null;
+  const budgetPct = budget ? (totalSpend/budget)*100 : null;
+
+  const alerts = [];
+  if (!monthLogs.length) alerts.push('No entries were logged for this month.');
+  if (budget && totalSpend > budget) alerts.push(`Monthly budget exceeded by ₹${Math.round(totalSpend-budget).toLocaleString('en-IN')}.`);
+  if (avgKmpl && getEffTarget()) {
+    const target = Number(getEffTarget());
+    if (target && avgKmpl < target) alerts.push(`Average efficiency was ${avgKmpl.toFixed(1)}, below the ${target} target.`);
+  }
+
+  const byStation = {};
+  fuelLogs.forEach(l => {
+    const k = l.station || 'Other';
+    byStation[k] = (byStation[k]||0) + (Number(l.amt)||0);
+  });
+
+  const expenseBreakdown = {};
+  otherLogs.forEach(l => {
+    const k = l.category || l.purpose || 'Other expense';
+    expenseBreakdown[k] = (expenseBreakdown[k]||0) + (Number(l.amt)||0);
+  });
+
+  return {
+    app: 'FuelIQ',
+    generatedAt: new Date().toISOString(),
+    month, vehicle,
+    googleAccount: gdrive.email || '',
+    currency: 'INR',
+    metrics: {
+      avgEfficiency: avgKmpl,
+      fuelSpend, otherSpend, totalSpend, distance,
+      fuelLitres: litres, avgFuelPrice: avgPrice,
+      fuelCostPerKm: costKm, tcoPerKm: tcoKm,
+      fills: fuelLogs.length, otherEntries: otherLogs.length,
+      budget, budgetPct
+    },
+    stationSpend: byStation,
+    expenseBreakdown,
+    alerts,
+    recentEntries: monthLogs.slice(-8).map(l => ({
+      date:l.date, type:l.type, station:l.station||'', category:l.category||'',
+      amount:Number(l.amt)||0, litres:Number(l.litres)||null, odo:Number(l.odo)||null
+    }))
+  };
+}
+
+function openMonthlyReportModal() {
+  document.getElementById('settingsMenu').classList.remove('show');
+  const month = new Date().toISOString().slice(0,7);
+  const m = document.getElementById('reportMonth');
+  if (m && !m.value) m.value = month;
+  const vs = document.getElementById('reportVehicle');
+  if (vs) {
+    vs.innerHTML = appData.vehicles.map(v => `<option value="${String(v).replace(/"/g,'&quot;')}">${String(v).replace(/[&<>]/g,'')}</option>`).join('');
+    vs.value = appData.settings.activeVehicle;
+  }
+  const savedEmail = gdrive.email || localStorage.getItem('fueliq_report_recipient') || '';
+  const savedEndpoint = localStorage.getItem('fueliq_report_endpoint') || '';
+  document.getElementById('reportRecipient').value = savedEmail;
+  document.getElementById('reportEndpoint').value = savedEndpoint;
+  document.getElementById('reportGoogleAccount').textContent =
+    gdrive.email ? `Signed in as ${gdrive.email}.` : 'Sign in with Google above first.';
+  document.getElementById('monthlyReportPreview').innerHTML = '';
+  document.getElementById('monthlyReportModal').classList.add('show');
+  focusFirstIn(document.getElementById('monthlyReportModal'));
+}
+
+function closeMonthlyReportModal() {
+  document.getElementById('monthlyReportModal').classList.remove('show');
+}
+
+function moneyReport(v) {
+  return (v == null || !isFinite(v)) ? '—' : '₹' + Math.round(v).toLocaleString('en-IN');
+}
+function numReport(v, digits=1) {
+  return (v == null || !isFinite(v)) ? '—' : Number(v).toLocaleString('en-IN',{maximumFractionDigits:digits});
+}
+
+function previewMonthlyReport() {
+  const vehicle = document.getElementById('reportVehicle').value || appData.settings.activeVehicle;
+  const month = reportMonthValue() || new Date().toISOString().slice(0,7);
+  const r = getMonthlyReportData(vehicle, month);
+  const m = r.metrics;
+  const alerts = r.alerts.length ? r.alerts.map(a=>`<li>${a}</li>`).join('') : '<li>No immediate exceptions.</li>';
+  document.getElementById('monthlyReportPreview').innerHTML = `
+    <div class="email-report-preview">
+      <h3>${vehicle} · ${month}</h3>
+      <div class="email-report-kpis">
+        <div class="email-report-kpi"><div class="rlabel">Total Spend</div><div class="rvalue">${moneyReport(m.totalSpend)}</div></div>
+        <div class="email-report-kpi"><div class="rlabel">Fuel Spend</div><div class="rvalue">${moneyReport(m.fuelSpend)}</div></div>
+        <div class="email-report-kpi"><div class="rlabel">Distance</div><div class="rvalue">${numReport(m.distance)} km</div></div>
+        <div class="email-report-kpi"><div class="rlabel">Efficiency</div><div class="rvalue">${numReport(m.avgEfficiency)} km/L</div></div>
+        <div class="email-report-kpi"><div class="rlabel">Fuel Price</div><div class="rvalue">${moneyReport(m.avgFuelPrice)}/L</div></div>
+        <div class="email-report-kpi"><div class="rlabel">TCO / KM</div><div class="rvalue">${moneyReport(m.tcoPerKm)}</div></div>
+      </div>
+      <div class="email-report-note"><strong>Attention:</strong><ul style="padding-left:18px;margin-top:5px;">${alerts}</ul></div>
+    </div>`;
+}
+
+async function sendMonthlyReportNow() {
+  const endpoint = document.getElementById('reportEndpoint').value.trim();
+  const recipient = document.getElementById('reportRecipient').value.trim();
+  const vehicle = document.getElementById('reportVehicle').value || appData.settings.activeVehicle;
+  const month = reportMonthValue() || new Date().toISOString().slice(0,7);
+
+  if (!endpoint) { showToast('Add your Apps Script Web App URL first.', 'error'); return; }
+  if (!recipient || !recipient.includes('@')) { showToast('Enter a valid recipient email.', 'error'); return; }
+
+  localStorage.setItem('fueliq_report_endpoint', endpoint);
+  localStorage.setItem('fueliq_report_recipient', recipient);
+
+  try {
+    showToast('Preparing monthly report…');
+    const payload = getMonthlyReportData(vehicle, month);
+    const resp = await fetch(endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({action:'sendNow', recipient, report:payload})
+    });
+    const text = await resp.text();
+    let result = {};
+    try { result = JSON.parse(text); } catch(e) {}
+    if (!resp.ok || result.ok === false) throw new Error(result.error || text || 'Send failed');
+    showToast('Monthly report sent successfully.');
+  } catch(e) {
+    console.error(e);
+    showToast('Could not send the report: ' + e.message, 'error');
+  }
+}
+
 
 /* ── ANNUAL SUMMARY ── */
 function openAnnualSummary() {
