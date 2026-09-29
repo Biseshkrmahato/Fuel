@@ -911,7 +911,15 @@
 <div class="modal-overlay" id="monthlyReportModal">
   <div class="modal-box">
     <h2>📧 Monthly Email Report</h2>
-    <div class="modal-sub">Create a polished monthly FuelIQ summary and send it through your Google account.</div>
+    <div class="modal-sub">FuelIQ can automatically email your previous-month vehicle report on the 1st of every month through the Google account you're signed in with.</div>
+
+    <div class="alert-card" style="margin:16px 0;">
+      <div class="alert-icon">🔐</div>
+      <div class="alert-text">
+        <strong>Recipient</strong>
+        <div class="alert-sub" id="reportGoogleAccount">Sign in with Google above first. The report will be sent to your signed-in Google account automatically.</div>
+      </div>
+    </div>
 
     <div class="form-grid" style="margin-top:20px;">
       <div class="form-group">
@@ -923,20 +931,16 @@
         <select id="reportVehicle"></select>
       </div>
       <div class="form-group" style="grid-column:1/-1;">
-        <label>Send To</label>
-        <input type="email" id="reportRecipient" placeholder="your@email.com">
-      </div>
-      <div class="form-group" style="grid-column:1/-1;">
         <label>Apps Script Web App URL</label>
         <input type="url" id="reportEndpoint" placeholder="https://script.google.com/macros/s/.../exec">
       </div>
     </div>
 
     <div class="alert-card" style="margin:8px 0 18px;">
-      <div class="alert-icon">🔐</div>
+      <div class="alert-icon" id="monthlyEmailStatusIcon">⚪</div>
       <div class="alert-text">
-        <strong>Google account</strong>
-        <div class="alert-sub" id="reportGoogleAccount">Sign in with Google above first. The monthly automation runs from your Google account via Apps Script.</div>
+        <strong id="monthlyEmailStatusTitle">Monthly Email: Not enabled</strong>
+        <div class="alert-sub" id="monthlyEmailStatus">Add the Apps Script URL, then enable automatic monthly delivery.</div>
       </div>
     </div>
 
@@ -944,7 +948,9 @@
 
     <div class="modal-close-row">
       <button class="btn-secondary" onclick="previewMonthlyReport()">👁 Preview</button>
-      <button class="btn-primary" onclick="sendMonthlyReportNow()">✉️ Send Now</button>
+      <button class="btn-primary" id="monthlyEnableBtn" onclick="enableMonthlyEmail()">🔔 Enable Monthly Email</button>
+      <button class="btn-secondary" id="monthlyDisableBtn" onclick="disableMonthlyEmail()" style="display:none;">⏸ Disable</button>
+      <button class="btn-secondary" onclick="sendMonthlyReportNow()">✉️ Send Now</button>
       <button class="btn-secondary" onclick="closeMonthlyReportModal()">Close</button>
     </div>
   </div>
@@ -3103,18 +3109,29 @@ function markReminderDone(id) {
 
 
 /* ── MONTHLY EMAIL REPORT ──
-   The browser prepares the report context. Gmail delivery and recurring scheduling
-   are intentionally handled by Google Apps Script so the report can run when this
-   page is closed.
+   The browser prepares manual-report data. Google Apps Script handles Gmail delivery
+   and the recurring 1st-of-month trigger, so the report still runs when this page is closed.
+   The recipient is NEVER typed into FuelIQ: Apps Script sends to the Google account that
+   owns/runs the Apps Script project (the same account used to configure this personal app).
 */
+const REPORT_ENDPOINT_KEY = 'fueliq_report_endpoint';
+const REPORT_ENABLED_KEY = 'fueliq_monthly_email_enabled';
+
 function reportMonthValue() {
   const el = document.getElementById('reportMonth');
   return el ? el.value : '';
 }
 
+function previousMonthValue() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
 function getMonthlyReportData(vehicle, month) {
   vehicle = vehicle || appData.settings.activeVehicle;
-  month = month || new Date().toISOString().slice(0,7);
+  month = month || previousMonthValue();
 
   const rawLogs = appData.logs
     .filter(l => l.vehicle === vehicle)
@@ -3133,8 +3150,6 @@ function getMonthlyReportData(vehicle, month) {
   const avgKmpl = kmplValues.length ? kmplValues.reduce((a,b)=>a+b,0)/kmplValues.length : null;
   const avgPrice = litres ? fuelSpend/litres : null;
 
-  // Use odometer readings around the month so the distance figure reflects the
-  // month's odometer movement rather than only the month's fill-ups.
   const odoPoints = rawLogs.filter(l => typeof l.odo === 'number' && isFinite(l.odo));
   const before = odoPoints.filter(l => String(l.date||'') < month).slice(-1)[0];
   const during = odoPoints.filter(l => String(l.date||'').slice(0,7) === month);
@@ -3193,22 +3208,62 @@ function getMonthlyReportData(vehicle, month) {
   };
 }
 
+function getMonthlyEmailEndpoint() {
+  return (localStorage.getItem(REPORT_ENDPOINT_KEY) || '').trim();
+}
+
+function isMonthlyEmailEnabled() {
+  return localStorage.getItem(REPORT_ENABLED_KEY) === '1';
+}
+
+function setMonthlyEmailUI(enabled) {
+  const icon = document.getElementById('monthlyEmailStatusIcon');
+  const title = document.getElementById('monthlyEmailStatusTitle');
+  const status = document.getElementById('monthlyEmailStatus');
+  const enable = document.getElementById('monthlyEnableBtn');
+  const disable = document.getElementById('monthlyDisableBtn');
+  if (!icon || !title || !status) return;
+
+  if (enabled) {
+    icon.textContent = '🟢';
+    title.textContent = 'Monthly Email: Enabled';
+    status.textContent = 'FuelIQ will send the previous month’s report automatically on the 1st.';
+    if (enable) enable.style.display = 'none';
+    if (disable) disable.style.display = '';
+  } else {
+    icon.textContent = '⚪';
+    title.textContent = 'Monthly Email: Not enabled';
+    status.textContent = 'Add the Apps Script URL, then enable automatic monthly delivery.';
+    if (enable) enable.style.display = '';
+    if (disable) disable.style.display = 'none';
+  }
+}
+
+function updateMonthlyReportAccount() {
+  const el = document.getElementById('reportGoogleAccount');
+  if (!el) return;
+  if (gdrive.email) {
+    el.innerHTML = `Signed in as <strong>${String(gdrive.email).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong>. The report will be delivered to this Google account.`;
+  } else {
+    el.textContent = 'Sign in with Google above first. The report will be sent to your signed-in Google account automatically.';
+  }
+}
+
 function openMonthlyReportModal() {
   document.getElementById('settingsMenu').classList.remove('show');
-  const month = new Date().toISOString().slice(0,7);
   const m = document.getElementById('reportMonth');
-  if (m && !m.value) m.value = month;
+  if (m && !m.value) m.value = previousMonthValue();
+
   const vs = document.getElementById('reportVehicle');
   if (vs) {
     vs.innerHTML = appData.vehicles.map(v => `<option value="${String(v).replace(/"/g,'&quot;')}">${String(v).replace(/[&<>]/g,'')}</option>`).join('');
     vs.value = appData.settings.activeVehicle;
   }
-  const savedEmail = gdrive.email || localStorage.getItem('fueliq_report_recipient') || '';
-  const savedEndpoint = localStorage.getItem('fueliq_report_endpoint') || '';
-  document.getElementById('reportRecipient').value = savedEmail;
-  document.getElementById('reportEndpoint').value = savedEndpoint;
-  document.getElementById('reportGoogleAccount').textContent =
-    gdrive.email ? `Signed in as ${gdrive.email}.` : 'Sign in with Google above first.';
+
+  const endpoint = getMonthlyEmailEndpoint();
+  document.getElementById('reportEndpoint').value = endpoint;
+  updateMonthlyReportAccount();
+  setMonthlyEmailUI(isMonthlyEmailEnabled());
   document.getElementById('monthlyReportPreview').innerHTML = '';
   document.getElementById('monthlyReportModal').classList.add('show');
   focusFirstIn(document.getElementById('monthlyReportModal'));
@@ -3227,7 +3282,7 @@ function numReport(v, digits=1) {
 
 function previewMonthlyReport() {
   const vehicle = document.getElementById('reportVehicle').value || appData.settings.activeVehicle;
-  const month = reportMonthValue() || new Date().toISOString().slice(0,7);
+  const month = reportMonthValue() || previousMonthValue();
   const r = getMonthlyReportData(vehicle, month);
   const m = r.metrics;
   const alerts = r.alerts.length ? r.alerts.map(a=>`<li>${a}</li>`).join('') : '<li>No immediate exceptions.</li>';
@@ -3246,37 +3301,77 @@ function previewMonthlyReport() {
     </div>`;
 }
 
+async function callMonthlyEmailBackend(action, report) {
+  const endpoint = getMonthlyEmailEndpoint();
+  if (!endpoint) throw new Error('Add your Apps Script Web App URL first.');
+  if (!gdrive.email) throw new Error('Sign in with Google first so FuelIQ knows the account to use.');
+
+  const payload = { action };
+  if (report) payload.report = report;
+
+  const resp = await fetch(endpoint, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  });
+  const raw = await resp.text();
+  let result = {};
+  try { result = JSON.parse(raw); } catch(e) {}
+  if (!resp.ok || result.ok === false) throw new Error(result.error || raw || 'Request failed');
+  return result;
+}
+
+async function enableMonthlyEmail() {
+  const endpoint = document.getElementById('reportEndpoint').value.trim();
+  if (!endpoint) { showToast('Add your Apps Script Web App URL first.', 'error'); return; }
+  if (!gdrive.email) { showToast('Sign in with Google first.', 'error'); return; }
+
+  localStorage.setItem(REPORT_ENDPOINT_KEY, endpoint);
+  try {
+    showToast('Enabling monthly email…');
+    const result = await callMonthlyEmailBackend('enableMonthly');
+    localStorage.setItem(REPORT_ENABLED_KEY, '1');
+    setMonthlyEmailUI(true);
+    showToast(result.message || 'Monthly email enabled.');
+  } catch(e) {
+    console.error(e);
+    showToast('Could not enable monthly email: ' + e.message, 'error');
+  }
+}
+
+async function disableMonthlyEmail() {
+  try {
+    showToast('Disabling monthly email…');
+    const result = await callMonthlyEmailBackend('disableMonthly');
+    localStorage.setItem(REPORT_ENABLED_KEY, '0');
+    setMonthlyEmailUI(false);
+    showToast(result.message || 'Monthly email disabled.');
+  } catch(e) {
+    console.error(e);
+    showToast('Could not disable monthly email: ' + e.message, 'error');
+  }
+}
+
 async function sendMonthlyReportNow() {
   const endpoint = document.getElementById('reportEndpoint').value.trim();
-  const recipient = document.getElementById('reportRecipient').value.trim();
   const vehicle = document.getElementById('reportVehicle').value || appData.settings.activeVehicle;
-  const month = reportMonthValue() || new Date().toISOString().slice(0,7);
+  const month = reportMonthValue() || previousMonthValue();
 
   if (!endpoint) { showToast('Add your Apps Script Web App URL first.', 'error'); return; }
-  if (!recipient || !recipient.includes('@')) { showToast('Enter a valid recipient email.', 'error'); return; }
+  if (!gdrive.email) { showToast('Sign in with Google first.', 'error'); return; }
 
-  localStorage.setItem('fueliq_report_endpoint', endpoint);
-  localStorage.setItem('fueliq_report_recipient', recipient);
+  localStorage.setItem(REPORT_ENDPOINT_KEY, endpoint);
 
   try {
     showToast('Preparing monthly report…');
     const payload = getMonthlyReportData(vehicle, month);
-    const resp = await fetch(endpoint, {
-      method:'POST',
-      headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({action:'sendNow', recipient, report:payload})
-    });
-    const text = await resp.text();
-    let result = {};
-    try { result = JSON.parse(text); } catch(e) {}
-    if (!resp.ok || result.ok === false) throw new Error(result.error || text || 'Send failed');
-    showToast('Monthly report sent successfully.');
+    const result = await callMonthlyEmailBackend('sendNow', payload);
+    showToast(result.message || 'Monthly report sent successfully.');
   } catch(e) {
     console.error(e);
     showToast('Could not send the report: ' + e.message, 'error');
   }
 }
-
 
 /* ── ANNUAL SUMMARY ── */
 function openAnnualSummary() {
