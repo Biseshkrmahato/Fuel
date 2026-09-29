@@ -1,157 +1,358 @@
-# ⛽ FuelIQ — Premium Vehicle Management
+# FuelIQ --- Premium Vehicle Management
 
-A single-file, installable-feeling web app for tracking fuel and EV charging, running costs and efficiency (KMPL or km/kWh). Built for Indian drivers, with no backend, no account and no build step. Open `index.html` and it works.
+FuelIQ is a browser-based vehicle management dashboard for tracking
+fuel, expenses, trips, efficiency, running costs and vehicle-related
+reminders.
 
-**Live app:** https://biseshkrmahato.github.io/Fuel/
+**Live demo:** https://biseshkmahato.github.io/Fuel/
 
----
+------------------------------------------------------------------------
 
-## ✨ Features
+## Features
 
-### Efficiency & cost analytics
-- **KMPL per fill-up** with two calculation modes: **Rolling Average** (forgiving of partial top-ups) and **Strict Full-Tank**
-- Configurable rolling window, personal **target** with an over/under indicator, and outlier flags for suspicious entries
-- **True cost per km** (fuel + other expenses) vs. fuel-only cost per km
-- Estimated remaining range, fuel-in-tank estimate, next-fill odometer estimate and a live efficiency gauge
-- 12+ charts: monthly spend, price trend, city/highway split, efficiency trend, cost/km trend, odometer progress, cumulative spend, yearly ownership cost and more
-- Time filters (All Time, This Month, 3 / 6 / 12 Months, YTD) applied to every KPI and chart
+### 📊 Dashboard & Analytics
 
-### 🔌 Electric vehicle support
-- Mark any vehicle as **Electric** when you add it, or switch an existing one from the ⋮ menu → **Vehicle Type**
-- The log form becomes a **Charging Session**: Energy Added (kWh), Price per kWh, charging network (Home, Tata Power, Statiq, Ather Grid, ChargeZone, Jio-bp pulse) and charging type (Home AC, Public AC, DC Fast)
-- Efficiency is shown in **km/kWh** across the dashboard, gauge, table, charts and annual summary
-- The gauge uses a car scale (0–10 km/kWh) and switches to a two-wheeler scale (0–40) when your average is above 10
-- Range estimate uses your **Battery Capacity** (kWh)
-- Each EV keeps its own km/kWh target, separate from your petrol KMPL target
-- The receipt scanner is hidden for EVs, since it only reads fuel-pump bills
+-   At-a-glance KPIs for:
+    -   Average fuel efficiency
+    -   True cost per kilometre
+    -   Fuel cost per kilometre
+    -   Total distance
+    -   Fuel spend
+    -   Other expenses
+    -   Average fuel price
+-   Interactive charts and analytics
+-   Time filters:
+    -   All Time
+    -   This Month
+    -   3 Months
+    -   6 Months
+    -   YTD
+    -   12 Months
+-   Efficiency and cost analysis
+-   Fuel-station spend analysis
+-   Expense breakdowns
 
-> Switching an existing vehicle between fuel and electric does **not** convert old entries (litres are not turned into kWh), and its tank/battery capacity and target are cleared.
+### ⛽ Fuel Tracking
 
-### Logging
-- Three entry types: **Fuel / Charging**, **Other Expense** (Service, Repair, Insurance, Toll, Wash, Accessories, Fine…) and **Trip**
-- Fuel types: Petrol, Diesel, Premium and CNG, with Indian station presets (BPCL, IOCL, HPCL, Jio-bp, Shell, Essar / Nayara)
-- **Receipt scanning (OCR)** with Tesseract.js, loaded only when you first scan; reads date, litres, rate, amount, station and fuel type
-- Odometer sanity checks that warn about likely typos before saving
-- Edit or delete any entry, search the log, bulk **CSV import** and CSV export
+Record fuel fill-ups with details such as: - Date - Odometer - Litres -
+Amount - Fuel price - Fuel station - Vehicle
 
-### Planning & alerts
-- Service, insurance and PUC **reminders** by due date or odometer, with "Mark done"
-- Monthly budget alerts and tank/battery capacity per vehicle
-- **Annual summary** report and a print-friendly dashboard
+FuelIQ supports rolling-average efficiency calculations and configurable
+efficiency targets.
 
-### Multi-vehicle
-- Switch vehicles from the header; entries, reminders, capacity, budget and targets are kept per vehicle
-- A comparison dashboard appears once you have two or more vehicles
-- **Delete a vehicle** from ⋮ → **Delete Current Vehicle**. The prompt shows how many entries and reminders will be removed. You can't delete your only vehicle. Use **Backup Data (JSON)** first if you might want it back
+### 💰 Expense Management
 
-### Backup & sync
-- One-tap **JSON backup / restore**
-- Optional **Google Drive sync**: sign in once, changes upload automatically a couple of seconds after each edit, the app reconnects silently on later visits, and it detects newer data from another device. Pull-to-refresh on mobile
+Track non-fuel vehicle expenses such as: - Service and maintenance -
+Washing - Tolls - Repairs - Insurance - Other vehicle-related expenses
 
-### Designed for every screen
-- Native-style bottom tab bar on phones and tablets, 2-column KPI grid on phones
-- Multi-column layouts on tablet and a wide layout on desktop
-- Dark / light theme, safe-area support for notched phones, keyboard focus rings, Escape-to-close
-- Add it to your home screen for an app-like experience
+### 🚘 Multiple Vehicles
 
----
+-   Add multiple vehicles
+-   Switch between vehicles from the dashboard
+-   Store vehicle-specific information
+-   Set vehicle type and tank capacity
+-   Maintain separate logs and analytics
 
-## 🚀 Getting started
+### 🔔 Reminders
 
-### Just use it
-Open the live app above. Your data stays in your browser, so nothing needs to be set up.
+Create reminders for: - Service - Insurance - PUC - Custom vehicle tasks
 
-### Run locally
-No install or build step:
+Reminders can optionally include: - Due date - Due odometer
 
-```bash
-git clone https://github.com/biseshkrmahato/Fuel.git
-cd Fuel
-open index.html        # macOS (xdg-open on Linux, or double-click on Windows)
+### 🎯 Budget & Efficiency Targets
+
+Configure: - Monthly vehicle budget - Target KMPL - Rolling efficiency
+window - Calculation mode - Tank capacity - Vehicle type
+
+FuelIQ uses these settings in the dashboard and monthly reporting.
+
+### ☁️ Google Drive Sync
+
+FuelIQ can sign in with Google and synchronize its data to the user's
+own Google Drive.
+
+The application stores its backup as:
+
+`fueliq-data.json`
+
+The Drive integration uses Google's `drive.file` scope so FuelIQ is
+designed to access the file it creates rather than the user's entire
+Drive.
+
+Data is automatically synchronized after changes, with manual sync
+available from the Google Drive settings.
+
+### 📧 Monthly Email Reports
+
+FuelIQ includes a monthly reporting workflow that can send a vehicle
+report through Google Apps Script.
+
+The report workflow supports: - Selecting the reporting month -
+Selecting a vehicle - Previewing the report - Sending a report
+immediately - Connecting the dashboard to an Apps Script Web App -
+Automated previous-month reporting through a time-based Apps Script
+trigger
+
+The Apps Script backend can generate the monthly email and PDF report.
+
+### 📅 Annual Summary
+
+The dashboard includes a year-in-review summary for the selected
+vehicle, with yearly spending, distance and efficiency information where
+sufficient data is available.
+
+### 📁 Import / Export
+
+FuelIQ supports: - CSV export - Bulk CSV import - JSON backup - JSON
+restore - Print / Save dashboard as PDF
+
+### 🌙 Responsive UI
+
+FuelIQ is designed for desktop, tablet and mobile use.
+
+It includes: - Dark / light mode - Mobile bottom navigation - Responsive
+KPI cards - Responsive charts - Touch-friendly controls - Mobile-safe
+tables and scrolling - PWA-style mobile metadata
+
+------------------------------------------------------------------------
+
+## Data Storage
+
+FuelIQ uses browser `localStorage` for local application state.
+
+When Google Drive Sync is enabled, the application synchronizes the
+FuelIQ dataset to the user's Google Drive as:
+
+``` text
+fueliq-data.json
 ```
 
-### Host your own copy on GitHub Pages
-1. Fork this repo, or push `index.html` to a new one.
-2. Go to **Settings → Pages**.
-3. Under **Build and deployment**, choose **Deploy from a branch**, pick `main` and `/ (root)`, then **Save**.
-4. Your app will be live at `https://<your-username>.github.io/<your-repo>/`.
+This means the dashboard can be used locally without a server, while
+Google Drive provides an optional cloud backup and cross-device
+synchronization layer.
 
-> Google Drive sign-in only works from origins registered on the OAuth client. If you host your own copy, see the next section.
+------------------------------------------------------------------------
 
-### Install on your phone
-- **Android (Chrome):** menu ⋮ → **Add to Home screen**
-- **iOS (Safari):** Share → **Add to Home Screen**
+## Monthly Email Automation
 
----
+The monthly email workflow has two parts:
 
-## ☁️ Google Drive sync
+### 1. FuelIQ frontend
 
-**Using the live app:** open ⋮ → **Google Drive Sync** → **Sign in with Google**. There is nothing to configure. Your data is saved as one file, `fueliq-data.json`, in your own Drive.
+The dashboard contains the Monthly Email Report interface.
 
-**What it can access:** storage uses the `drive.file` scope, so FuelIQ can only see the file it created, nothing else in your Drive. It also reads your basic Google profile (name, email, photo) to show who is signed in.
+From:
 
-### Self-hosting: use your own OAuth client
-The Client ID in the source is tied to the original site's URL. If you host a fork elsewhere, create your own:
+**Settings → Monthly Email Report**
 
-1. Open the [Google Cloud Console](https://console.cloud.google.com/) and create (or pick) a project.
-2. **APIs & Services → Library** → enable the **Google Drive API**.
-3. **APIs & Services → OAuth consent screen** → configure it (External is fine) and add yourself as a test user.
-4. **Credentials → Create credentials → OAuth client ID** → type **Web application**.
-5. Under **Authorized JavaScript origins**, add the exact origin your app is served from, e.g. `https://<your-username>.github.io` (no trailing slash or path).
-6. Copy the **Client ID** and replace the `GDRIVE_CLIENT_ID` constant near the top of the Drive section in `index.html`.
+you can configure: - Report month - Vehicle - Recipient - Apps Script
+Web App URL
 
-> Google occasionally needs a manual sign-in tap (for example if your session has expired or your browser blocks silent sign-in). The Sign in button in the header is always there as a fallback.
+The frontend can preview the report and send the selected report to the
+Apps Script endpoint.
 
----
+### 2. Google Apps Script backend
 
-## 🔒 Privacy & data
+The Apps Script project handles: - Reading FuelIQ data - Calculating
+monthly metrics - Creating the monthly report - Creating the PDF
+attachment - Sending the email - Running the previous-month report
+automatically
 
-- Everything is stored in your browser's **localStorage** on your device. There is no server and no analytics.
-- Google Drive sync is opt-in and goes directly from your browser to your own Drive.
-- Receipt OCR runs **in the browser**, so images are not uploaded anywhere.
-- Clearing your browser data removes local entries. Use **Backup Data (JSON)** or Drive sync regularly.
+For automatic reporting, the Apps Script project uses a time-based
+trigger for:
 
----
-
-## 🛠️ Tech stack
-
-| | |
-|---|---|
-| App | Vanilla HTML, CSS and JavaScript in one self-contained file |
-| Charts | [Chart.js 4](https://www.chartjs.org/) (CDN) |
-| OCR | [Tesseract.js 5](https://tesseract.projectnaptha.com/) (CDN, lazy-loaded) |
-| Auth & sync | Google Identity Services + Drive API v3 |
-| Storage | Browser `localStorage` (+ optional Drive JSON file) |
-| Fonts | Chakra Petch, DM Sans (Google Fonts) |
-
-External scripts load from CDNs, so the first load needs an internet connection.
-
----
-
-## 📁 Project structure
-
-```
-.
-├── index.html   # the entire app
-├── LICENSE
-└── README.md
+``` text
+sendPreviousMonthReport
 ```
 
----
+A typical schedule is the first day of every month.
 
-## 🧭 Roadmap ideas
+For example:
 
-- Offline support via a service worker
-- Swipe gestures on log rows
-- Charging-session cost split for home tariffs (time-of-day rates)
-- Chart tap-to-inspect tooltips on mobile
+``` text
+1 October  → September report
+1 November → October report
+1 December → November report
+```
 
----
+The Apps Script Web App URL is connected to the FuelIQ dashboard through
+the Monthly Email Report settings.
 
-## 🤝 Contributing
+------------------------------------------------------------------------
 
-Issues and pull requests are welcome. Because the app is one file, please keep changes self-contained and test on a phone-sized viewport as well as desktop.
+## Technology
 
-## 📄 License
+FuelIQ is intentionally lightweight and primarily client-side.
 
-Released under the [MIT License](LICENSE).
+### Core
+
+-   HTML5
+-   CSS3
+-   JavaScript
+-   Browser `localStorage`
+
+### Visualization
+
+-   Chart.js
+
+### Google Integration
+
+-   Google Identity Services
+-   Google Drive REST API
+-   Google Apps Script
+-   Gmail / Apps Script email delivery
+
+### Fonts
+
+-   Chakra Petch
+-   DM Sans
+
+The current dashboard loads Chart.js, Google Identity Services and web
+fonts from external CDNs/services.
+
+------------------------------------------------------------------------
+
+## Project Structure
+
+The main application is currently contained in:
+
+``` text
+index.html
+```
+
+The application is designed as a single-page dashboard, with the UI,
+styling and JavaScript logic contained in the HTML file.
+
+A separate Google Apps Script project is used for the automated monthly
+email/PDF backend.
+
+------------------------------------------------------------------------
+
+## Running Locally
+
+Because FuelIQ is primarily a client-side application, the dashboard can
+be opened directly in a browser.
+
+For the best experience, especially with Google authentication and Drive
+synchronization, serve it from an authorized HTTPS origin such as GitHub
+Pages.
+
+Example:
+
+``` text
+https://biseshkmahato.github.io/Fuel/
+```
+
+------------------------------------------------------------------------
+
+## GitHub Pages Deployment
+
+1.  Push `index.html` to the repository.
+2.  Open the repository's **Settings → Pages**.
+3.  Select the deployment branch and folder.
+4.  Save the GitHub Pages configuration.
+5.  Open the generated Pages URL.
+
+After updating the HTML:
+
+``` bash
+git add index.html
+git commit -m "Update FuelIQ dashboard"
+git push
+```
+
+GitHub Pages will publish the updated dashboard.
+
+------------------------------------------------------------------------
+
+## Google Drive Setup
+
+1.  Open FuelIQ.
+2.  Click **Sign in with Google**.
+3.  Authorize the requested Google permissions.
+4.  FuelIQ creates/synchronizes its own `fueliq-data.json` backup.
+5.  The signed-in account is shown in the dashboard.
+
+The Google OAuth client must have the deployed website origin authorized
+in the corresponding Google Cloud project.
+
+------------------------------------------------------------------------
+
+## Monthly Email Setup
+
+1.  Create/open the Google Apps Script project.
+2.  Add the FuelIQ monthly-report backend.
+3.  Authorize the script.
+4.  Deploy it as a **Web App**.
+5.  Set the Web App to execute as the script owner.
+6.  Configure access according to your intended use.
+7.  Copy the deployed `/exec` URL.
+8.  Open FuelIQ → **Settings → Monthly Email Report**.
+9.  Paste the Apps Script Web App URL.
+10. Select the recipient and report month.
+11. Use **Preview** or **Send Now** to test.
+12. Configure the Apps Script time-based trigger for automatic monthly
+    delivery.
+
+------------------------------------------------------------------------
+
+## Privacy & Data
+
+FuelIQ is designed around user-controlled storage.
+
+-   Dashboard data is stored locally in the browser.
+-   Google Drive synchronization stores the FuelIQ backup in the
+    signed-in user's Drive.
+-   The Drive integration is scoped to the application's Drive file
+    access.
+-   Monthly email delivery requires the separately configured Apps
+    Script backend.
+-   The repository does not need a traditional application server for
+    normal dashboard operation.
+
+Do not publish private data, API secrets, service-account credentials or
+Apps Script credentials in the repository.
+
+------------------------------------------------------------------------
+
+## Backup Recommendation
+
+Even with Google Drive synchronization enabled, periodically export a
+JSON backup from:
+
+**Settings → Backup Data (JSON)**
+
+Keep an offline copy if the vehicle history is important to you.
+
+------------------------------------------------------------------------
+
+## Roadmap Ideas
+
+Possible future improvements include:
+
+-   Service-cost forecasting
+-   Fuel-price trend alerts
+-   Maintenance cost analytics
+-   More detailed trip analytics
+-   Multi-vehicle comparison dashboards
+-   PWA installation/offline enhancements
+-   More report customization
+-   Additional notification channels
+
+------------------------------------------------------------------------
+
+## License
+
+No license has been specified for this repository yet.
+
+If you want others to freely use, modify and redistribute FuelIQ, add an
+appropriate open-source license such as MIT. Otherwise, the repository
+remains subject to the default copyright position.
+
+------------------------------------------------------------------------
+
+## Author
+
+**Bisesh Kumar Mahato**
+
+FuelIQ --- Premium Vehicle Management
