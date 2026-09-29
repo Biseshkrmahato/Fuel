@@ -4,7 +4,7 @@ FuelIQ is a browser-based vehicle management dashboard for tracking
 fuel, expenses, trips, efficiency, running costs and vehicle-related
 reminders.
 
-**Live demo:** https://biseshkmahato.github.io/Fuel/
+**Live demo:** https://biseshkrmahato.github.io/Fuel/
 
 ------------------------------------------------------------------------
 
