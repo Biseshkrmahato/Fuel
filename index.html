@@ -478,6 +478,7 @@
     <button class="menu-item" onclick="openMonthlyReportModal()">📧 Monthly Email Report</button>
     <button class="menu-item" onclick="window.print()">🖨️ Print Dashboard</button>
     <button class="menu-item" onclick="promptAddVehicle()">🚘 Add New Vehicle</button>
+    <button class="menu-item" onclick="openVehicleDetailsModal()">📇 Vehicle Details <span id="menuVehDetails" style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:600;"></span></button>
     <button class="menu-item" onclick="promptDeleteVehicle()" style="color:var(--red);">🗑️ Delete Current Vehicle</button>
     <button class="menu-item" onclick="exportCSV()">📊 Export CSV</button>
     <label class="menu-item" style="margin:0;">
@@ -952,6 +953,30 @@
       <button class="btn-secondary" id="monthlyDisableBtn" onclick="disableMonthlyEmail()" style="display:none;">⏸ Disable</button>
       <button class="btn-secondary" onclick="sendMonthlyReportNow()">✉️ Send Now</button>
       <button class="btn-secondary" onclick="closeMonthlyReportModal()">Close</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="vehicleDetailsModal">
+  <div class="modal-box">
+    <h2>📇 Vehicle Details</h2>
+    <div class="modal-sub">Rename this vehicle or add its make and model — purely for your own reference, shown next to it in the picker up top.</div>
+    <div class="form-grid" style="margin-top:20px;">
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Vehicle Name</label>
+        <input type="text" id="vdName" maxlength="60" placeholder="e.g. Activa">
+      </div>
+      <div class="form-group">
+        <label>Make / Brand</label>
+        <input type="text" id="vdMake" maxlength="40" placeholder="e.g. Honda">
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" id="vdModel" maxlength="40" placeholder="e.g. Activa 6G">
+      </div>
+    </div>
+    <div class="modal-close-row">
+      <button class="btn-primary" onclick="saveVehicleDetails()">Save</button>
+      <button class="btn-secondary" onclick="closeVehicleDetailsModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1600,9 +1625,63 @@ function focusFirstIn(el) {
 
 function updateVehicleDropdown() {
   const sel = document.getElementById('vehicleSelect');
-  sel.innerHTML = appData.vehicles.map(v => `<option value="${v}">${isEV(v) ? '🔌 ' : ''}${v}</option>`).join('');
+  sel.innerHTML = appData.vehicles.map(v => {
+    const meta = (appData.vehicleMeta && appData.vehicleMeta[v]) || {};
+    const details = [meta.make, meta.model].filter(Boolean).join(' ');
+    return `<option value="${escHtml(v)}">${isEV(v) ? '🔌 ' : ''}${escHtml(v)}${details ? ' — ' + escHtml(details) : ''}</option>`;
+  }).join('');
   sel.value = appData.settings.activeVehicle;
+  const meta = getVehicleMeta(appData.settings.activeVehicle);
+  const label = document.getElementById('menuVehDetails');
+  if (label) label.textContent = [meta.make, meta.model].filter(Boolean).join(' ') || 'Not set';
 }
+/* Shared HTML-escaping for any free-text field (vehicle name, make, model, ...) we interpolate into markup. */
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"\']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renameVehicle(oldName, newName) {
+  const idx = appData.vehicles.indexOf(oldName);
+  if (idx > -1) appData.vehicles[idx] = newName;
+  if (appData.vehicleMeta && Object.prototype.hasOwnProperty.call(appData.vehicleMeta, oldName)) {
+    appData.vehicleMeta[newName] = appData.vehicleMeta[oldName];
+    delete appData.vehicleMeta[oldName];
+  }
+  appData.logs.forEach(l => { if (l.vehicle === oldName) l.vehicle = newName; });
+  (appData.reminders || []).forEach(r => { if (r.vehicle === oldName) r.vehicle = newName; });
+  if (appData.settings.activeVehicle === oldName) appData.settings.activeVehicle = newName;
+}
+
+function openVehicleDetailsModal() {
+  document.getElementById('settingsMenu').classList.remove('show');
+  const v = appData.settings.activeVehicle;
+  const meta = getVehicleMeta(v);
+  document.getElementById('vdName').value = v;
+  document.getElementById('vdMake').value = meta.make || '';
+  document.getElementById('vdModel').value = meta.model || '';
+  document.getElementById('vehicleDetailsModal').classList.add('show');
+  focusFirstIn(document.getElementById('vehicleDetailsModal'));
+}
+function closeVehicleDetailsModal() { document.getElementById('vehicleDetailsModal').classList.remove('show'); }
+
+function saveVehicleDetails() {
+  const oldName = appData.settings.activeVehicle;
+  const newName = document.getElementById('vdName').value.trim();
+  const make = document.getElementById('vdMake').value.trim();
+  const model = document.getElementById('vdModel').value.trim();
+  if (!newName) { showToast("Vehicle name can't be empty", 'error'); return; }
+  if (newName.length > 60) { showToast('Vehicle name is too long', 'error'); return; }
+  if (newName !== oldName && appData.vehicles.some(x => x.toLowerCase() === newName.toLowerCase())) {
+    showToast(`A vehicle named "${newName}" already exists`, 'error');
+    return;
+  }
+  if (newName !== oldName) renameVehicle(oldName, newName);
+  const meta = getVehicleMeta(newName);
+  meta.make = make; meta.model = model;
+  if (editingId && !appData.logs.some(l => l.id === editingId)) cancelEdit();
+  save(); updateVehicleDropdown(); refreshUI(); closeVehicleDetailsModal();
+  showToast(newName !== oldName ? `Renamed to "${newName}" and saved details.` : 'Vehicle details saved.');
+}
+
 function changeVehicle() {
   appData.settings.activeVehicle = document.getElementById('vehicleSelect').value;
   save(); currentPage = 1; refreshUI();
