@@ -71,8 +71,17 @@
   .logo-text span { color: var(--amber); }
   
   .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  select.vehicle-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 10px; font-family: var(--font-mono); font-size: 14px; outline: none; cursor: pointer; font-weight: 600; transition: var(--trans);}
+  .vehicle-picker { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  select.vehicle-select { background: var(--bg3); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 10px; font-family: var(--font-mono); font-size: 14px; outline: none; cursor: pointer; font-weight: 600; transition: var(--trans); min-width: 0;}
   select.vehicle-select:hover { border-color: var(--amber); }
+  /* Small brand-logo badge shown next to the vehicle picker (and in Vehicle Details). Tries a
+     real brand logo (Clearbit's free, keyless logo API — https://logo.clearbit.com/{domain}),
+     falling back to a drawn car/bike silhouette (inline SVG, no network) if it can't load or
+     no make is set — see vehicleLogoUrl()/silhouetteDataUri() and updateVehicleLogo(). */
+  .vehicle-logo-badge { width: 34px; height: 34px; flex-shrink: 0; border-radius: 9px; background: #fff; border: 1px solid var(--border); object-fit: contain; padding: 4px; }
+  .vehicle-logo-badge.is-silhouette { background: var(--bg3); padding: 5px; }
+  .vd-logo-preview { width: 56px; height: 56px; border-radius: 12px; background: #fff; border: 1px solid var(--border); object-fit: contain; padding: 6px; flex-shrink: 0; }
+  .vd-logo-preview.is-silhouette { background: var(--bg3); padding: 8px; }
   
   .icon-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--trans); }
   .icon-btn:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-2px); }
@@ -338,7 +347,8 @@
     #gdriveHeaderBtn { grid-column: 2; grid-row: 1; }
     #themeBtn { grid-column: 3; grid-row: 1; }
     .header-actions .icon-btn:last-child { grid-column: 4; grid-row: 1; }
-    select.vehicle-select { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+    .vehicle-picker { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+    .vehicle-picker select.vehicle-select { flex: 1 1 auto; min-width: 0; }
     
     main { padding: 16px 12px; }
     
@@ -447,7 +457,10 @@
     <div class="logo-text">Fuel<span>IQ</span></div>
   </div>
   <div class="header-actions">
-    <select id="vehicleSelect" class="vehicle-select" onchange="changeVehicle()"></select>
+    <div class="vehicle-picker">
+      <img id="vehicleLogoBadge" class="vehicle-logo-badge" alt="" aria-hidden="true">
+      <select id="vehicleSelect" class="vehicle-select" onchange="changeVehicle()"></select>
+    </div>
     <button class="header-log-btn" onclick="document.getElementById('formPanel').scrollIntoView({behavior:'smooth'})">➕ Log</button>
     <span id="gdriveSyncBadge" style="font-family:var(--font-mono); font-size:11px; color:var(--text3);"></span>
     <button id="gdriveHeaderBtn" class="gdrive-header-btn" onclick="gdriveHeaderClick()" title="Sign in with Google to back up to Drive">
@@ -967,12 +980,28 @@
       </div>
       <div class="form-group">
         <label>Make / Brand</label>
-        <input type="text" id="vdMake" maxlength="40" placeholder="e.g. Honda">
+        <input type="text" id="vdMake" maxlength="40" placeholder="e.g. Honda" oninput="previewVehicleLogo()">
       </div>
       <div class="form-group">
         <label>Model</label>
         <input type="text" id="vdModel" maxlength="40" placeholder="e.g. Activa 6G">
       </div>
+      <div class="form-group">
+        <label>Year</label>
+        <input type="number" id="vdYear" min="1980" max="2100" placeholder="e.g. 2023">
+      </div>
+      <div class="form-group">
+        <label>Body Type <span style="color:var(--text3); font-weight:500;">· for the logo fallback icon</span></label>
+        <select id="vdBody" onchange="previewVehicleLogo()">
+          <option value="car">Car</option>
+          <option value="bike">Bike / Scooter</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; margin-top:16px;">
+      <img id="vdLogoPreview" class="vd-logo-preview" alt="">
+      <div style="font-size:12px; color:var(--text3); line-height:1.5;">Logo preview, looked up from the Make field.<br>Shown next to the vehicle picker up top.</div>
     </div>
     <div class="modal-close-row">
       <button class="btn-primary" onclick="saveVehicleDetails()">Save</button>
@@ -1623,17 +1652,83 @@ function focusFirstIn(el) {
   if (f) setTimeout(() => f.focus(), 50);
 }
 
+/* ── VEHICLE LOGO: brand logo by make, with an offline silhouette fallback ──
+   There's no free, keyless API for an exact make+model+year photo (and Indian
+   two-wheeler models especially aren't covered by the car-photo APIs that do exist),
+   so this looks up the BRAND's logo instead — via Clearbit's free, keyless logo API,
+   which serves a company's logo from its domain (https://logo.clearbit.com/{domain}).
+   If that fails to load (offline, or the guessed domain is wrong), or no make is set,
+   it falls back to a small drawn car/bike silhouette that always works, no network needed. */
+const BRAND_DOMAINS = {
+  'maruti':'marutisuzuki.com', 'maruti suzuki':'marutisuzuki.com', 'hyundai':'hyundai.com',
+  'tata':'tatamotors.com', 'tata motors':'tatamotors.com', 'mahindra':'mahindra.com',
+  'toyota':'toyota.com', 'kia':'kia.com', 'mg':'mgmotor.co.in', 'renault':'renault.com',
+  'nissan':'nissan.com', 'skoda':'skoda-auto.com', 'volkswagen':'volkswagen.com', 'vw':'volkswagen.com',
+  'ford':'ford.com', 'jeep':'jeep.com', 'bmw':'bmw.com', 'mercedes':'mercedes-benz.com',
+  'mercedes-benz':'mercedes-benz.com', 'audi':'audi.com', 'volvo':'volvocars.com', 'citroen':'citroen.com',
+  'fiat':'fiat.com', 'jaguar':'jaguar.com', 'land rover':'landrover.com', 'lexus':'lexus.com',
+  'isuzu':'isuzu.com', 'honda':'honda.com',
+  'hero':'heromotocorp.com', 'hero motocorp':'heromotocorp.com', 'bajaj':'bajajauto.com',
+  'tvs':'tvsmotor.com', 'royal enfield':'royalenfield.com', 'yamaha':'yamaha-motor.com',
+  'suzuki':'suzukimotorcycle.co.in', 'ktm':'ktm.com', 'ather':'atherenergy.com',
+  'ola':'olaelectric.com', 'ola electric':'olaelectric.com', 'okinawa':'okinawaautotech.com',
+  'ampere':'ampere.co.in', 'simple energy':'simpleenergy.in', 'revolt':'revoltmotors.com'
+};
+function guessBrandDomain(make) {
+  const key = make.trim().toLowerCase();
+  if (BRAND_DOMAINS[key]) return BRAND_DOMAINS[key];
+  const squashed = key.replace(/[^a-z0-9]/g, '');
+  return squashed ? squashed + '.com' : null; // best-effort guess for a brand not in the list above
+}
+const VEHICLE_SILHOUETTES = {
+  car: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path d="M8 30l3.5-10.5A4 4 0 0 1 15.3 17h17.4a4 4 0 0 1 3.8 2.5L40 30" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><rect x="5" y="29" width="38" height="8" rx="3" fill="none" stroke="#94a3b8" stroke-width="2.6"/><circle cx="14" cy="37" r="3.4" fill="#94a3b8"/><circle cx="34" cy="37" r="3.4" fill="#94a3b8"/></svg>',
+  bike: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="11" cy="34" r="6.5" fill="none" stroke="#94a3b8" stroke-width="2.6"/><circle cx="37" cy="34" r="6.5" fill="none" stroke="#94a3b8" stroke-width="2.6"/><path d="M11 34l7-14h8l4 8h7M18 20l6-6h6" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  other: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="15" fill="none" stroke="#94a3b8" stroke-width="2.6"/><path d="M24 16v8l6 4" fill="none" stroke="#94a3b8" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+function silhouetteDataUri(body) {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(VEHICLE_SILHOUETTES[body] || VEHICLE_SILHOUETTES.other);
+}
+// Points an <img> at a brand's logo (falling back to a silhouette on load failure or no make).
+function setVehicleLogoImg(img, make, body) {
+  if (!img) return;
+  const fallback = silhouetteDataUri(body || 'car');
+  img.onerror = null;
+  if (make && make.trim()) {
+    const domain = guessBrandDomain(make);
+    img.classList.remove('is-silhouette');
+    img.onerror = () => { img.onerror = null; img.src = fallback; img.classList.add('is-silhouette'); };
+    img.src = domain ? `https://logo.clearbit.com/${domain}?size=128` : fallback;
+    img.alt = make;
+  } else {
+    img.classList.add('is-silhouette');
+    img.src = fallback;
+    img.alt = '';
+  }
+}
+function updateVehicleLogo() {
+  const v = appData.settings.activeVehicle;
+  const meta = getVehicleMeta(v);
+  setVehicleLogoImg(document.getElementById('vehicleLogoBadge'), meta.make, meta.body);
+}
+// Live preview inside the Vehicle Details modal as the user types the make / picks a body type.
+function previewVehicleLogo() {
+  const make = document.getElementById('vdMake').value;
+  const body = document.getElementById('vdBody').value;
+  setVehicleLogoImg(document.getElementById('vdLogoPreview'), make, body);
+}
+
 function updateVehicleDropdown() {
   const sel = document.getElementById('vehicleSelect');
   sel.innerHTML = appData.vehicles.map(v => {
     const meta = (appData.vehicleMeta && appData.vehicleMeta[v]) || {};
-    const details = [meta.make, meta.model].filter(Boolean).join(' ');
+    const details = [meta.make, meta.model, meta.year].filter(Boolean).join(' ');
     return `<option value="${escHtml(v)}">${isEV(v) ? '🔌 ' : ''}${escHtml(v)}${details ? ' — ' + escHtml(details) : ''}</option>`;
   }).join('');
   sel.value = appData.settings.activeVehicle;
   const meta = getVehicleMeta(appData.settings.activeVehicle);
   const label = document.getElementById('menuVehDetails');
   if (label) label.textContent = [meta.make, meta.model].filter(Boolean).join(' ') || 'Not set';
+  updateVehicleLogo();
 }
 /* Shared HTML-escaping for any free-text field (vehicle name, make, model, ...) we interpolate into markup. */
 function escHtml(s) {
@@ -1658,6 +1753,9 @@ function openVehicleDetailsModal() {
   document.getElementById('vdName').value = v;
   document.getElementById('vdMake').value = meta.make || '';
   document.getElementById('vdModel').value = meta.model || '';
+  document.getElementById('vdYear').value = meta.year || '';
+  document.getElementById('vdBody').value = meta.body || 'car';
+  previewVehicleLogo();
   document.getElementById('vehicleDetailsModal').classList.add('show');
   focusFirstIn(document.getElementById('vehicleDetailsModal'));
 }
@@ -1668,7 +1766,12 @@ function saveVehicleDetails() {
   const newName = document.getElementById('vdName').value.trim();
   const make = document.getElementById('vdMake').value.trim();
   const model = document.getElementById('vdModel').value.trim();
+  const yearRaw = document.getElementById('vdYear').value.trim();
+  const body = document.getElementById('vdBody').value;
   if (!newName) { showToast("Vehicle name can't be empty", 'error'); return; }
+  if (yearRaw && (!/^\d{4}$/.test(yearRaw) || yearRaw < 1980 || yearRaw > 2100)) {
+    showToast("Enter a valid 4-digit year, or leave it blank", "error"); return;
+  }
   if (newName.length > 60) { showToast('Vehicle name is too long', 'error'); return; }
   if (newName !== oldName && appData.vehicles.some(x => x.toLowerCase() === newName.toLowerCase())) {
     showToast(`A vehicle named "${newName}" already exists`, 'error');
@@ -1676,7 +1779,7 @@ function saveVehicleDetails() {
   }
   if (newName !== oldName) renameVehicle(oldName, newName);
   const meta = getVehicleMeta(newName);
-  meta.make = make; meta.model = model;
+  meta.make = make; meta.model = model; meta.year = yearRaw ? Number(yearRaw) : null; meta.body = body;
   if (editingId && !appData.logs.some(l => l.id === editingId)) cancelEdit();
   save(); updateVehicleDropdown(); refreshUI(); closeVehicleDetailsModal();
   showToast(newName !== oldName ? `Renamed to "${newName}" and saved details.` : 'Vehicle details saved.');
