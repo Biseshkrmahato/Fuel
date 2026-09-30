@@ -4,12 +4,12 @@
 
 **Premium vehicle management dashboard: fuel, expenses, efficiency, running costs and reminders, all in your browser.**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-0f766e?style=for-the-badge)](https://biseshkmahato.github.io/Fuel/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-0f766e?style=for-the-badge)](https://biseshkrmahato.github.io/Fuel/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 ![Client-side](https://img.shields.io/badge/Architecture-Client--side-orange?style=for-the-badge)
 ![Chart.js](https://img.shields.io/badge/Charts-Chart.js-ff6384?style=for-the-badge)
 
-[Live Demo](https://biseshkmahato.github.io/Fuel/) · [Features](#features) · [Getting Started](#getting-started) · [Setup Guides](#setup-guides) · [Roadmap](#roadmap)
+[Live Demo](https://biseshkrmahato.github.io/Fuel/) · [Features](#features) · [Getting Started](#getting-started) · [Setup Guides](#setup-guides) · [Roadmap](#roadmap)
 
 </div>
 
@@ -120,7 +120,7 @@ FuelIQ is a client-side app, so you can open `index.html` directly in a browser.
 For the full experience, including Google sign-in and Drive sync, serve it from an **authorized HTTPS origin** such as GitHub Pages:
 
 ```text
-https://biseshkmahato.github.io/Fuel/
+https://biseshkrmahato.github.io/Fuel/
 ```
 
 ---
