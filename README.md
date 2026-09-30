@@ -1,4 +1,4 @@
-# FuelIQ — Premium Vehicle Management
+# FuelIQ: Premium Vehicle Management
 
 FuelIQ is a browser-based vehicle management dashboard for tracking fuel, expenses, trips, efficiency, running costs and vehicle-related reminders.
 
