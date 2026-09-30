@@ -1,0 +1,1778 @@
+/*******************************************************
+ * FuelIQ — Monthly Email Report  (V5)
+ *
+ * PERSONAL-USE GOOGLE APPS SCRIPT BACKEND
+ *
+ * What it does:
+ *  - Sends the monthly FuelIQ report through Gmail (HTML email + PDF).
+ *  - Sends to the Google account that owns/runs this script.
+ *  - Reads fueliq-data.json from that same Google Drive.
+ *  - Enables/disables a trigger that runs on the 1st at ~08:00 IST.
+ *  - "Send Now" can be called by the FuelIQ GitHub Pages app.
+ *
+ * IMPORTANT:
+ *  - Deploy as a Web App:
+ *      Execute as: Me
+ *      Who has access: Anyone
+ *  - Set the Apps Script project timezone to Asia/Kolkata.
+ *  - After pasting a new version: Deploy > Manage deployments > Edit >
+ *    New version, and re-authorise if prompted.
+ *  - This is intended as a personal FuelIQ endpoint, not a public SaaS API.
+ *******************************************************/
+
+const FUELIQ_FILE_NAME = 'fueliq-data.json';
+const REPORT_SUBJECT_PREFIX = 'FuelIQ Monthly Report';
+const REPORT_TIMEZONE = 'Asia/Kolkata';
+const SEND_NOW_COOLDOWN_SECONDS = 45;
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'];
+const MONTH_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Colour palette used by the PDF. */
+const PDF = {
+  navy: '#0f172a',
+  ink: '#1e293b',
+  slate: '#475569',
+  muted: '#64748b',
+  faint: '#94a3b8',
+  line: '#e2e8f0',
+  card: '#f1f5f9',
+  white: '#ffffff',
+  amber: '#f59e0b',
+  amberDark: '#b45309',
+  amberBg: '#fffbeb',
+  amberLine: '#fde68a',
+  blue: '#2563eb',
+  green: '#059669',
+  greenBg: '#ecfdf5',
+  greenLine: '#a7f3d0',
+  red: '#dc2626',
+  purple: '#7c3aed',
+  teal: '#0d9488'
+};
+
+const PDF_CONTENT_WIDTH = 515; // A4 (595pt) minus 40pt margins each side
+
+
+/* =====================================================
+   WEB APP ENDPOINTS
+   ===================================================== */
+
+/** Basic GET endpoint for testing/status. */
+function doGet() {
+  return json_({
+    ok: true,
+    app: 'FuelIQ Monthly Email',
+    recipient: maskEmail_(getReportRecipient_()),
+    monthlyEnabled: isMonthlyTriggerEnabled_(),
+    nextSchedule: '1st of every month at approximately 08:00'
+  });
+}
+
+/** Browser POST endpoint used by FuelIQ. */
+function doPost(e) {
+  try {
+    const body = e && e.postData && e.postData.contents
+      ? JSON.parse(e.postData.contents)
+      : {};
+
+    const action = body.action || '';
+    const recipientMasked = maskEmail_(getReportRecipient_());
+
+    if (action === 'enableMonthly') {
+      setupMonthlyTrigger();
+      return json_({
+        ok: true,
+        monthlyEnabled: true,
+        recipient: recipientMasked,
+        message: 'Monthly email enabled. The previous month report will be sent on the 1st at approximately 08:00.'
+      });
+    }
+
+    if (action === 'disableMonthly') {
+      disableMonthlyTrigger();
+      return json_({
+        ok: true,
+        monthlyEnabled: false,
+        recipient: recipientMasked,
+        message: 'Monthly email disabled.'
+      });
+    }
+
+    if (action === 'sendNow') {
+      if (!body.report || typeof body.report !== 'object') {
+        throw new Error('No report data was supplied.');
+      }
+
+      // The endpoint is open ("Anyone"), so throttle it to protect the inbox.
+      const cache = CacheService.getScriptCache();
+      if (cache.get('fueliq-send-now-lock')) {
+        throw new Error('A report was just sent. Please wait a moment before sending another.');
+      }
+      cache.put('fueliq-send-now-lock', '1', SEND_NOW_COOLDOWN_SECONDS);
+
+      sendReport_(body.report, getReportRecipient_(), false);
+      return json_({
+        ok: true,
+        recipient: recipientMasked,
+        message: 'FuelIQ monthly report sent successfully.'
+      });
+    }
+
+    if (action === 'status') {
+      return json_({
+        ok: true,
+        monthlyEnabled: isMonthlyTriggerEnabled_(),
+        recipient: recipientMasked
+      });
+    }
+
+    throw new Error('Unknown action.');
+  } catch (err) {
+    console.error(err);
+    return json_({ ok: false, error: String(err && err.message ? err.message : err) });
+  }
+}
+
+
+/* =====================================================
+   TRIGGERS
+   ===================================================== */
+
+/**
+ * Creates exactly one monthly trigger.
+ * Existing FuelIQ monthly triggers are removed first.
+ */
+function setupMonthlyTrigger() {
+  disableMonthlyTrigger();
+
+  ScriptApp.newTrigger('sendPreviousMonthReport')
+    .timeBased()
+    .onMonthDay(1)
+    .atHour(8)
+    .inTimezone(REPORT_TIMEZONE)
+    .create();
+
+  return true;
+}
+
+/** Removes the FuelIQ monthly trigger(s). */
+function disableMonthlyTrigger() {
+  ScriptApp.getProjectTriggers()
+    .filter(function(t) {
+      return t.getHandlerFunction() === 'sendPreviousMonthReport';
+    })
+    .forEach(function(t) {
+      ScriptApp.deleteTrigger(t);
+    });
+}
+
+/** Runs automatically on the 1st and reports the previous calendar month. */
+function sendPreviousMonthReport() {
+  const tz = REPORT_TIMEZONE;
+  const now = new Date();
+
+  const year = Number(Utilities.formatDate(now, tz, 'yyyy'));
+  const monthNo = Number(Utilities.formatDate(now, tz, 'M'));
+  const month = prevMonthKey_(year + '-' + ('0' + monthNo).slice(-2));
+
+  const data = loadFuelIQData_();
+  const recipient = getReportRecipient_();
+
+  if (!recipient) {
+    throw new Error('Could not determine the Google account email for this Apps Script.');
+  }
+
+  const vehicles = getVehicleList_(data);
+
+  const reports = vehicles.map(function(vehicle) {
+    return buildMonthlyReport_(data, vehicle, month, tz);
+  });
+
+  sendCombinedReport_(reports, recipient, true);
+}
+
+/** Manual test helper: run this from the editor to send last month's report now. */
+function testSendPreviousMonthReport() {
+  sendPreviousMonthReport();
+}
+
+function getVehicleList_(data) {
+  const raw = Array.isArray(data.vehicles) && data.vehicles.length
+    ? data.vehicles
+    : [(data.settings && data.settings.activeVehicle) || 'My Car'];
+
+  return raw.map(function(v) {
+    if (v && typeof v === 'object') return String(v.name || v.id || 'Vehicle');
+    return String(v);
+  });
+}
+
+
+/* =====================================================
+   DATA LOADING
+   ===================================================== */
+
+/** Loads FuelIQ's Drive backup. */
+function loadFuelIQData_() {
+  const files = DriveApp.getFilesByName(FUELIQ_FILE_NAME);
+
+  if (!files.hasNext()) {
+    throw new Error('Could not find ' + FUELIQ_FILE_NAME + ' in the Google Drive account running this script.');
+  }
+
+  // Use the most recently modified matching file.
+  let latest = null;
+  while (files.hasNext()) {
+    const f = files.next();
+    if (!latest || f.getLastUpdated().getTime() > latest.getLastUpdated().getTime()) {
+      latest = f;
+    }
+  }
+
+  const text = latest.getBlob().getDataAsString('UTF-8');
+  const data = JSON.parse(text);
+
+  if (!data || !Array.isArray(data.logs)) {
+    throw new Error(FUELIQ_FILE_NAME + ' does not contain valid FuelIQ data.');
+  }
+
+  return data;
+}
+
+
+/* =====================================================
+   REPORT MODEL
+   ===================================================== */
+
+function logKey_(l) {
+  return l && l.id != null ? String(l.id) : String(l && l.date) + '|' + String(l && l.odo);
+}
+
+function monthOf_(l) {
+  return String((l && l.date) || '').slice(0, 7);
+}
+
+function isFuelLog_(l) {
+  return l && l.type === 'fuel';
+}
+
+function positiveNumber_(v) {
+  const n = Number(v);
+  return isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Per-fill efficiency (km/L) using the full-tank method:
+ * distance since the previous full-tank fill / litres put in since then.
+ * Fills flagged as partial (full === false or partial === true) accumulate
+ * their litres into the next full fill.
+ *
+ * Returns a map of logKey_ -> km/L.
+ */
+function computeKmpl_(data, logs) {
+  const map = {};
+
+  const fills = (logs || [])
+    .filter(function(l) {
+      return isFuelLog_(l) && positiveNumber_(l.odo) && positiveNumber_(l.litres);
+    })
+    .slice()
+    .sort(function(a, b) { return Number(a.odo) - Number(b.odo); });
+
+  let baseOdo = null;
+  let litresSince = 0;
+
+  fills.forEach(function(l) {
+    const odo = Number(l.odo);
+    const litres = Number(l.litres);
+    const partial = l.full === false || l.partial === true;
+
+    if (baseOdo === null) {
+      // The very first fill only establishes the baseline.
+      if (!partial) baseOdo = odo;
+      return;
+    }
+
+    litresSince += litres;
+
+    if (partial) return;
+
+    const distance = odo - baseOdo;
+    const kmpl = litresSince > 0 ? distance / litresSince : null;
+
+    if (kmpl !== null && isFinite(kmpl) && kmpl > 0 && kmpl < 150) {
+      map[logKey_(l)] = kmpl;
+    }
+
+    baseOdo = odo;
+    litresSince = 0;
+  });
+
+  return map;
+}
+
+/** Computes all headline numbers for one vehicle in one month. */
+function computeMonthMetrics_(logs, kmplMap, meta, settings, month) {
+  const monthLogs = logs.filter(function(l) { return monthOf_(l) === month; });
+
+  const fuelLogs = monthLogs
+    .filter(isFuelLog_)
+    .slice()
+    .sort(function(a, b) { return Number(a.odo || 0) - Number(b.odo || 0); });
+
+  const otherLogs = monthLogs.filter(function(l) { return !isFuelLog_(l); });
+
+  const fuelSpend = sum_(fuelLogs, 'amt');
+  const otherSpend = sum_(otherLogs, 'amt');
+  const totalSpend = fuelSpend + otherSpend;
+  const litres = sum_(fuelLogs, 'litres');
+
+  const fills = fuelLogs.map(function(l) {
+    const lt = Number(l.litres) || 0;
+    const amt = Number(l.amt) || 0;
+    const k = kmplMap[logKey_(l)];
+    return {
+      date: l.date,
+      kmpl: typeof k === 'number' && isFinite(k) ? k : null,
+      price: lt > 0 ? amt / lt : null
+    };
+  });
+
+  const kmplValues = fills
+    .map(function(f) { return f.kmpl; })
+    .filter(function(v) { return v !== null; });
+
+  const avgEfficiency = kmplValues.length
+    ? kmplValues.reduce(function(a, b) { return a + b; }, 0) / kmplValues.length
+    : null;
+  const bestKmpl = kmplValues.length ? Math.max.apply(null, kmplValues) : null;
+  const worstKmpl = kmplValues.length ? Math.min.apply(null, kmplValues) : null;
+
+  const prices = fills
+    .map(function(f) { return f.price; })
+    .filter(function(v) { return v !== null && isFinite(v); });
+  const minPrice = prices.length ? Math.min.apply(null, prices) : null;
+  const maxPrice = prices.length ? Math.max.apply(null, prices) : null;
+  const avgFuelPrice = litres > 0 ? fuelSpend / litres : null;
+
+  // Distance from odometer readings.
+  const odoPoints = logs.filter(function(l) { return positiveNumber_(l.odo) !== null; });
+  const before = odoPoints.filter(function(l) { return monthOf_(l) < month; }).slice(-1)[0];
+  const during = odoPoints.filter(function(l) { return monthOf_(l) === month; });
+
+  let distance = null;
+  if (during.length) {
+    const odos = during.map(function(l) { return Number(l.odo); });
+    const maxOdo = Math.max.apply(null, odos);
+    if (before && maxOdo >= Number(before.odo)) {
+      distance = maxOdo - Number(before.odo);
+    } else if (during.length >= 2) {
+      distance = maxOdo - Math.min.apply(null, odos);
+    }
+  }
+
+  const fuelCostPerKm = distance > 0 ? fuelSpend / distance : null;
+  const tcoPerKm = distance > 0 ? totalSpend / distance : null;
+
+  const budget = Number(meta.monthlyBudget) || null;
+  const budgetPct = budget ? totalSpend / budget * 100 : null;
+  const targetKmpl = Number(meta.targetKmpl) || Number(settings.targetKmpl) || null;
+
+  return {
+    monthLogs: monthLogs,
+    fuelLogs: fuelLogs,
+    otherLogs: otherLogs,
+    fills: fills,
+    metrics: {
+      avgEfficiency: avgEfficiency,
+      bestKmpl: bestKmpl,
+      worstKmpl: worstKmpl,
+      fuelSpend: fuelSpend,
+      otherSpend: otherSpend,
+      totalSpend: totalSpend,
+      distance: distance,
+      fuelLitres: litres,
+      avgFuelPrice: avgFuelPrice,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      fuelCostPerKm: fuelCostPerKm,
+      tcoPerKm: tcoPerKm,
+      fills: fuelLogs.length,
+      otherEntries: otherLogs.length,
+      budget: budget,
+      budgetPct: budgetPct,
+      targetKmpl: targetKmpl
+    }
+  };
+}
+
+/**
+ * Builds a monthly report from the same data structure used by the dashboard.
+ */
+function buildMonthlyReport_(data, vehicle, month, tz) {
+  const logs = (data.logs || [])
+    .filter(function(l) { return l && l.vehicle === vehicle; })
+    .slice()
+    .sort(function(a, b) { return new Date(a.date) - new Date(b.date); });
+
+  const settings = data.settings || {};
+  const meta = (data.vehicleMeta && data.vehicleMeta[vehicle]) || {};
+  const kmplMap = computeKmpl_(data, logs);
+
+  const cur = computeMonthMetrics_(logs, kmplMap, meta, settings, month);
+  const prevMonth = prevMonthKey_(month);
+  const prev = computeMonthMetrics_(logs, kmplMap, meta, settings, prevMonth);
+
+  const m = cur.metrics;
+  const alerts = [];
+
+  if (!cur.monthLogs.length) {
+    alerts.push('No entries were logged for this month.');
+  }
+
+  if (m.budget && m.totalSpend > m.budget) {
+    alerts.push('Monthly budget exceeded by ' + money_(m.totalSpend - m.budget) + '.');
+  }
+
+  if (m.targetKmpl && m.avgEfficiency && m.avgEfficiency < m.targetKmpl) {
+    alerts.push(
+      'Average efficiency was ' + num_(m.avgEfficiency) +
+      ' km/L, below the ' + num_(m.targetKmpl) + ' km/L target.'
+    );
+  }
+
+  if (cur.fuelLogs.length && m.distance === null) {
+    alerts.push('Distance could not be calculated: log the odometer reading with your fill-ups.');
+  }
+
+  const stationSpend = {};
+  cur.fuelLogs.forEach(function(l) {
+    const station = l.station || 'Other';
+    stationSpend[station] = (stationSpend[station] || 0) + Number(l.amt || 0);
+  });
+
+  const expenseBreakdown = {};
+  cur.otherLogs.forEach(function(l) {
+    const category = l.category || l.purpose || 'Other expense';
+    expenseBreakdown[category] = (expenseBreakdown[category] || 0) + Number(l.amt || 0);
+  });
+
+  const pm = prev.metrics;
+  const comparison = prev.monthLogs.length
+    ? {
+        month: prevMonth,
+        totalSpend: pm.totalSpend,
+        distance: pm.distance,
+        avgEfficiency: pm.avgEfficiency,
+        avgFuelPrice: pm.avgFuelPrice
+      }
+    : null;
+
+  return {
+    app: 'FuelIQ',
+    generatedAt: new Date().toISOString(),
+    month: month,
+    vehicle: vehicle,
+    currency: 'INR',
+    metrics: m,
+    comparison: comparison,
+    stationSpend: stationSpend,
+    expenseBreakdown: expenseBreakdown,
+    alerts: alerts,
+    fillSeries: cur.fills.slice(-12),
+    recentEntries: cur.monthLogs.slice(-10).map(function(l) {
+      return {
+        date: l.date,
+        type: l.type,
+        station: l.station || '',
+        category: l.category || l.purpose || '',
+        amount: Number(l.amt || 0),
+        litres: Number(l.litres || 0) || null,
+        odo: Number(l.odo || 0) || null
+      };
+    })
+  };
+}
+
+/** Makes a report object (possibly built by the browser) safe to render. */
+function normalizeReport_(r) {
+  const out = r && typeof r === 'object' ? r : {};
+  out.metrics = out.metrics && typeof out.metrics === 'object' ? out.metrics : {};
+  out.alerts = Array.isArray(out.alerts) ? out.alerts : [];
+  out.stationSpend = out.stationSpend && typeof out.stationSpend === 'object' ? out.stationSpend : {};
+  out.expenseBreakdown = out.expenseBreakdown && typeof out.expenseBreakdown === 'object' ? out.expenseBreakdown : {};
+  out.recentEntries = Array.isArray(out.recentEntries) ? out.recentEntries : [];
+  out.fillSeries = Array.isArray(out.fillSeries) ? out.fillSeries : [];
+  out.comparison = out.comparison && typeof out.comparison === 'object' ? out.comparison : null;
+  out.vehicle = out.vehicle || 'Vehicle';
+
+  if (!/^\d{4}-\d{2}$/.test(String(out.month || ''))) {
+    out.month = Utilities.formatDate(new Date(), REPORT_TIMEZONE, 'yyyy-MM');
+  }
+  return out;
+}
+
+
+/* =====================================================
+   SENDING
+   ===================================================== */
+
+/** Sends one browser-supplied vehicle report. */
+function sendReport_(report, recipient, scheduled) {
+  sendCombinedReport_([normalizeReport_(report)], recipient, scheduled);
+}
+
+/** Sends one email (HTML + PDF attachment) covering all supplied vehicle reports. */
+function sendCombinedReport_(reports, recipient, scheduled) {
+  if (!reports || !reports.length) {
+    throw new Error('There is nothing to report.');
+  }
+  if (!recipient) {
+    throw new Error('Could not determine the Google account email for this Apps Script.');
+  }
+
+  const normalized = reports.map(normalizeReport_);
+  const month = normalized[0].month;
+
+  let pdf = null;
+  try {
+    pdf = buildPdfReport_(normalized, scheduled);
+  } catch (err) {
+    // Never lose the email just because the PDF failed.
+    console.error('PDF generation failed: ' + (err && err.stack ? err.stack : err));
+  }
+
+  const subject = REPORT_SUBJECT_PREFIX + ' — ' + formatMonthLabel_(month) +
+    (normalized.length === 1 ? ' — ' + normalized[0].vehicle : '');
+
+  const options = {
+    name: 'FuelIQ',
+    htmlBody: buildCombinedEmailHtml_(normalized, scheduled, !!pdf)
+  };
+  if (pdf) options.attachments = [pdf];
+
+  GmailApp.sendEmail(recipient, subject, buildPlainText_(normalized), options);
+}
+
+
+/* =====================================================
+   EMAIL (HTML)
+   ===================================================== */
+
+function buildCombinedEmailHtml_(reports, scheduled, hasPdf) {
+  const month = reports.length ? reports[0].month : '';
+
+  const generated = Utilities.formatDate(
+    new Date(),
+    REPORT_TIMEZONE,
+    'dd MMM yyyy, hh:mm a'
+  );
+
+  let sections = '';
+
+  reports.forEach(function(r) {
+    const m = r.metrics || {};
+
+    const alerts = (r.alerts && r.alerts.length)
+      ? r.alerts.map(function(a) {
+          return '<li style="margin:5px 0;">' + esc_(a) + '</li>';
+        }).join('')
+      : '<li style="margin:5px 0;">No immediate exceptions.</li>';
+
+    const stations = objectRows_(r.stationSpend);
+    const expenses = objectRows_(r.expenseBreakdown);
+
+    const budgetBar = buildBudgetBar_(m);
+    const efficiencyBar = buildEfficiencyBar_(m);
+
+    const recent = (r.recentEntries || []).map(function(x) {
+      return (
+        '<tr>' +
+        '<td style="padding:7px 5px;border-bottom:1px solid #e5e7eb;">' + esc_(fmtDate_(x.date)) + '</td>' +
+        '<td style="padding:7px 5px;border-bottom:1px solid #e5e7eb;">' + esc_(x.type || '') + '</td>' +
+        '<td style="padding:7px 5px;border-bottom:1px solid #e5e7eb;">' + esc_(x.station || x.category || '') + '</td>' +
+        '<td style="padding:7px 5px;border-bottom:1px solid #e5e7eb;text-align:right;">' + money_(x.amount) + '</td>' +
+        '</tr>'
+      );
+    }).join('');
+
+    sections += `
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0"
+        style="width:100%;border-collapse:separate;border-spacing:0;margin:0 0 22px;background:#ffffff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;">
+        <tr>
+          <td style="padding:18px 18px 16px;background:#111827;color:#ffffff;">
+            <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#fbbf24;font-weight:700;">VEHICLE</div>
+            <div style="font-size:22px;line-height:1.2;font-weight:700;margin-top:4px;">${esc_(r.vehicle || 'Vehicle')}</div>
+            <div style="font-size:13px;color:#cbd5e1;margin-top:5px;">${esc_(formatMonthLabel_(r.month))}</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:14px 10px 4px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;">
+              <tr>
+                ${metricCellSafe_('TOTAL SPEND', money_(m.totalSpend))}
+                ${metricCellSafe_('FUEL SPEND', money_(m.fuelSpend))}
+              </tr>
+              <tr>
+                ${metricCellSafe_('DISTANCE', withUnit_(num_(m.distance), ' km'))}
+                ${metricCellSafe_('EFFICIENCY', withUnit_(num_(m.avgEfficiency), ' km/L'))}
+              </tr>
+              <tr>
+                ${metricCellSafe_('AVG FUEL PRICE', withUnit_(money2_(m.avgFuelPrice), '/L'))}
+                ${metricCellSafe_('TCO / KM', money2_(m.tcoPerKm))}
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:8px 18px 16px;">
+            ${budgetBar}
+            ${efficiencyBar}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 18px 18px;">
+            <div style="padding:12px 14px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;">
+              <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#92400e;">ATTENTION</div>
+              <ul style="margin:6px 0 0;padding-left:18px;color:#78350f;font-size:12px;line-height:1.45;">${alerts}</ul>
+            </div>
+          </td>
+        </tr>
+
+        ${stations ? `
+        <tr>
+          <td style="padding:0 18px 18px;">
+            <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:7px;">Fuel station spend</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;font-size:12px;">
+              ${stations}
+            </table>
+          </td>
+        </tr>` : ''}
+
+        ${expenses ? `
+        <tr>
+          <td style="padding:0 18px 18px;">
+            <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:7px;">Other expense breakdown</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;font-size:12px;">
+              ${expenses}
+            </table>
+          </td>
+        </tr>` : ''}
+
+        ${recent ? `
+        <tr>
+          <td style="padding:0 18px 18px;">
+            <div style="font-size:13px;font-weight:700;color:#111827;margin-bottom:7px;">Recent entries</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;font-size:11px;">
+              <tr style="background:#f8fafc;">
+                <th style="padding:7px 5px;text-align:left;">Date</th>
+                <th style="padding:7px 5px;text-align:left;">Type</th>
+                <th style="padding:7px 5px;text-align:left;">Station / Category</th>
+                <th style="padding:7px 5px;text-align:right;">Amount</th>
+              </tr>
+              ${recent}
+            </table>
+          </td>
+        </tr>` : ''}
+      </table>
+    `;
+  });
+
+  return `
+  <div style="margin:0;padding:0;width:100%;background:#f3f4f6;font-family:Arial,Helvetica,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;background:#f3f4f6;">
+      <tr>
+        <td align="center" style="padding:14px 8px;">
+          <table role="presentation" width="680" cellspacing="0" cellpadding="0"
+            style="width:100%;max-width:680px;border-collapse:collapse;">
+            <tr>
+              <td style="padding:22px 20px;background:#0b0d14;border-radius:16px 16px 0 0;color:#ffffff;">
+                <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f59e0b;font-weight:700;">FuelIQ</div>
+                <div style="font-size:25px;line-height:1.2;font-weight:700;margin-top:5px;">Monthly Vehicle Report</div>
+                <div style="font-size:13px;color:#94a3b8;margin-top:5px;">${esc_(formatMonthLabel_(month))}</div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 0 0;">
+                ${sections}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 18px;background:#111827;border-radius:0 0 16px 16px;color:#94a3b8;font-size:10px;line-height:1.55;">
+                ${scheduled ? 'Automatically generated by your FuelIQ monthly schedule.' : 'Sent from your FuelIQ dashboard.'}
+                <br>
+                Generated ${esc_(generated)}${hasPdf ? ' · PDF report attached.' : ' · PDF could not be generated this time.'}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+  `;
+}
+
+/** Two-column KPI cell designed to survive Gmail mobile rendering. */
+function metricCellSafe_(label, value) {
+  return `
+    <td width="50%" style="width:50%;padding:5px;vertical-align:top;">
+      <div style="padding:11px 10px;border:1px solid #e5e7eb;border-radius:10px;background:#f8fafc;min-height:54px;">
+        <div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;line-height:1.2;">${esc_(label)}</div>
+        <div style="font-size:17px;line-height:1.2;font-weight:700;color:#111827;margin-top:4px;word-break:break-word;">${esc_(value)}</div>
+      </div>
+    </td>
+  `;
+}
+
+/** Progress row built with tables (Gmail ignores display:flex). */
+function emailProgress_(label, rightText, rightColor, pct, barColor, note) {
+  return `
+    <div style="margin:0 0 13px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin-bottom:5px;">
+        <tr>
+          <td style="font-size:10px;color:#64748b;">${esc_(label)}</td>
+          <td style="font-size:10px;text-align:right;font-weight:700;color:${rightColor};">${esc_(rightText)}</td>
+        </tr>
+      </table>
+      <div style="height:8px;background:#e5e7eb;border-radius:8px;overflow:hidden;">
+        <div style="height:8px;width:${pct}%;background:${barColor};border-radius:8px;"></div>
+      </div>
+      <div style="font-size:10px;color:#64748b;margin-top:4px;">${esc_(note)}</div>
+    </div>
+  `;
+}
+
+/** Visual budget utilisation bar. */
+function buildBudgetBar_(m) {
+  if (!m.budget || !isFinite(Number(m.budget))) return '';
+
+  const pct = Math.max(0, Math.min(100, Number(m.budgetPct) || 0));
+  const over = Number(m.totalSpend || 0) > Number(m.budget);
+
+  return emailProgress_(
+    'MONTHLY BUDGET',
+    num_(m.budgetPct) + '%',
+    over ? '#dc2626' : '#059669',
+    pct,
+    over ? '#dc2626' : '#10b981',
+    money_(m.totalSpend) + ' of ' + money_(m.budget)
+  );
+}
+
+/** Visual efficiency indicator. */
+function buildEfficiencyBar_(m) {
+  if (m.avgEfficiency == null) return '';
+
+  const value = Number(m.avgEfficiency);
+  const target = Number(m.targetKmpl || 0);
+  const pct = Math.max(0, Math.min(100, target > 0 ? value / target * 100 : value / 20 * 100));
+
+  return emailProgress_(
+    'EFFICIENCY',
+    num_(value) + ' km/L',
+    '#2563eb',
+    pct,
+    '#3b82f6',
+    target > 0 ? 'Target: ' + num_(target) + ' km/L' : 'Fuel efficiency trend'
+  );
+}
+
+/** Label / amount / share rows for the email. */
+function objectRows_(obj) {
+  const source = obj || {};
+  const keys = sortedKeys_(source).slice(0, 8);
+  if (!keys.length) return '';
+
+  const total = keys.reduce(function(s, k) { return s + Number(source[k] || 0); }, 0);
+
+  return keys.map(function(k) {
+    const v = Number(source[k] || 0);
+    const pct = total > 0 ? v / total * 100 : 0;
+    return (
+      '<tr>' +
+      '<td style="padding:6px 0;border-bottom:1px solid #e5e7eb;">' + esc_(k) + '</td>' +
+      '<td style="padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right;white-space:nowrap;">' +
+        money_(v) + ' <span style="color:#94a3b8;font-size:10px;">(' + num_(pct) + '%)</span>' +
+      '</td>' +
+      '</tr>'
+    );
+  }).join('');
+}
+
+
+/* =====================================================
+   PDF REPORT (Google Doc -> PDF)
+   ===================================================== */
+
+/**
+ * Builds the PDF attachment. A temporary Google Doc is laid out and exported
+ * to PDF, which is far more reliable than HTML-to-PDF in Apps Script.
+ */
+function buildPdfReport_(reports, scheduled) {
+  const month = reports.length ? reports[0].month : '';
+  const doc = DocumentApp.create('FuelIQ Monthly Report - ' + month);
+  const body = doc.getBody();
+  body.clear();
+
+  // A4 page setup in points.
+  try {
+    body.setPageWidth(595);
+    body.setPageHeight(842);
+    body.setMarginTop(34);
+    body.setMarginBottom(40);
+    body.setMarginLeft(40);
+    body.setMarginRight(40);
+  } catch (e) {
+    // Keep the document defaults if the runtime does not expose page sizing.
+  }
+
+  const defaults = {};
+  defaults[DocumentApp.Attribute.FONT_FAMILY] = 'Arial';
+  defaults[DocumentApp.Attribute.FONT_SIZE] = 9;
+  defaults[DocumentApp.Attribute.FOREGROUND_COLOR] = PDF.ink;
+  body.setAttributes(defaults);
+
+  // The empty paragraph a new body starts with is shrunk so it doesn't
+  // push the header band down.
+  const firstPara = body.getParagraphs()[0];
+  if (firstPara) {
+    firstPara.setFontSize(1).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+  }
+
+  // Footer shown on every page.
+  const footer = doc.getFooter() || doc.addFooter();
+  const footerPara = footer.getParagraphs()[0] || footer.appendParagraph('');
+  footerPara.setText(
+    'FuelIQ  ·  Monthly Vehicle Report  ·  ' + formatMonthLabel_(month) +
+    '  ·  Generated ' + Utilities.formatDate(new Date(), REPORT_TIMEZONE, 'dd MMM yyyy, HH:mm') + ' IST'
+  );
+  styleParagraph_(footerPara, {
+    size: 7, color: PDF.faint, align: DocumentApp.HorizontalAlignment.CENTER
+  });
+
+  reports.forEach(function(r, index) {
+    if (index > 0) body.appendPageBreak();
+    addPdfVehicleReport_(body, r, scheduled);
+  });
+
+  doc.saveAndClose();
+  Utilities.sleep(1200);
+
+  const file = DriveApp.getFileById(doc.getId());
+  const pdf = file.getBlob().getAs(MimeType.PDF);
+  pdf.setName('FuelIQ_Monthly_Report_' + month + '.pdf');
+
+  // Remove the temporary Google Doc. The PDF remains attached to the email.
+  file.setTrashed(true);
+
+  return pdf;
+}
+
+/** Lays out one vehicle: page 1 = executive summary, page 2 = detail. */
+function addPdfVehicleReport_(body, r, scheduled) {
+  const m = r.metrics || {};
+  const cmp = r.comparison || null;
+  const prevLabel = cmp ? shortMonthLabel_(cmp.month) : '';
+
+  /* ---------- PAGE 1 ---------- */
+
+  addHeaderBand_(body, r, scheduled);
+  spacer_(body, 6);
+
+  // KPI cards
+  const effSub = effDeltaSub_(m, cmp, prevLabel);
+  const cards = [
+    {
+      label: 'TOTAL SPEND', accent: PDF.amberDark, value: money_(m.totalSpend),
+      sub: deltaSub_(pctChange_(m.totalSpend, cmp && cmp.totalSpend), prevLabel, false)
+    },
+    {
+      label: 'DISTANCE', accent: PDF.blue, value: withUnit_(num_(m.distance), ' km'),
+      sub: deltaSub_(pctChange_(m.distance, cmp && cmp.distance), prevLabel, null)
+    },
+    {
+      label: 'AVG EFFICIENCY', accent: PDF.green, value: withUnit_(num_(m.avgEfficiency), ' km/L'),
+      sub: effSub
+    },
+    {
+      label: 'FUEL SPEND', accent: PDF.amberDark, value: money_(m.fuelSpend),
+      sub: { text: (m.fills || 0) + ' refuelling' + (m.fills === 1 ? '' : 's') + '  ·  ' + num_(m.fuelLitres) + ' L', color: PDF.muted }
+    },
+    {
+      label: 'AVG FUEL PRICE', accent: PDF.purple, value: withUnit_(money2_(m.avgFuelPrice), '/L'),
+      sub: m.minPrice != null && m.maxPrice != null && m.fills > 1
+        ? { text: 'Range ' + money2_(m.minPrice) + ' – ' + money2_(m.maxPrice), color: PDF.muted }
+        : deltaSub_(pctChange_(m.avgFuelPrice, cmp && cmp.avgFuelPrice), prevLabel, false)
+    },
+    {
+      label: 'COST PER KM (TCO)', accent: PDF.teal, value: withUnit_(money2_(m.tcoPerKm), '/km'),
+      sub: { text: 'Fuel only ' + withUnit_(money2_(m.fuelCostPerKm), '/km'), color: PDF.muted }
+    }
+  ];
+  addKpiGrid_(body, cards);
+  spacer_(body, 8);
+
+  // Performance vs plan
+  addSectionHeading_(body, 'Performance vs plan');
+  addPlanBars_(body, m);
+  spacer_(body, 4);
+
+  // Charts
+  addSectionHeading_(body, 'Spend overview');
+  addChartsRow_(body, r, m);
+  spacer_(body, 2);
+
+  // Insights
+  addSectionHeading_(body, 'Key insights');
+  addInsightsTable_(body, buildPdfInsights_(r).slice(0, 4));
+
+  body.appendPageBreak();
+
+  /* ---------- PAGE 2 ---------- */
+
+  addRunningHeader_(body, r);
+  spacer_(body, 6);
+
+  // Other expenses
+  addSectionHeading_(body, 'Other expense breakdown');
+  const expenseRows = buildSimpleBreakdownTable_(r.expenseBreakdown);
+  if (expenseRows) {
+    const expenseChart = createBarChart_(r.expenseBreakdown, PDF.blue, 500, 110, 5);
+    if (expenseChart) {
+      const img = body.appendImage(expenseChart);
+      img.setWidth(PDF_CONTENT_WIDTH * 0.92).setHeight(110 * PDF_CONTENT_WIDTH * 0.92 / 500);
+    }
+    spacer_(body, 4);
+    styleBreakdownTable_(body.appendTable(expenseRows));
+  } else {
+    const note = body.appendParagraph('No non-fuel expenses were recorded for this month.');
+    styleParagraph_(note, { size: 8.5, color: PDF.muted, after: 2 });
+  }
+  spacer_(body, 6);
+
+  // Efficiency per fill
+  const trend = createEfficiencyChart_(r.fillSeries, m.targetKmpl);
+  if (trend) {
+    addSectionHeading_(body, 'Efficiency by refuelling');
+    const img = body.appendImage(trend);
+    img.setWidth(PDF_CONTENT_WIDTH * 0.92).setHeight(130 * PDF_CONTENT_WIDTH * 0.92 / 500);
+    spacer_(body, 4);
+  }
+
+  // Watchpoints
+  addWatchpoints_(body, r.alerts || []);
+  spacer_(body, 8);
+
+  // Recent transactions
+  addSectionHeading_(body, 'Recent transactions');
+  const entries = (r.recentEntries || []).slice(-10);
+  if (entries.length) {
+    const rows = [['Date', 'Type', 'Station / Category', 'Litres', 'Amount', 'Odometer']];
+    entries.forEach(function(x) {
+      rows.push([
+        fmtDate_(x.date),
+        x.type === 'fuel' ? 'Fuel' : 'Expense',
+        String(x.station || x.category || '—'),
+        x.litres ? num_(x.litres) + ' L' : '—',
+        money_(x.amount),
+        x.odo ? num_(x.odo) + ' km' : '—'
+      ]);
+    });
+    styleTransactionTable_(body.appendTable(rows));
+  } else {
+    const note = body.appendParagraph('No transactions were recorded for this month.');
+    styleParagraph_(note, { size: 8.5, color: PDF.muted });
+  }
+
+  const endNote = body.appendParagraph(
+    (scheduled ? 'Automatically generated by FuelIQ.' : 'Generated from the FuelIQ dashboard.') +
+    '  Figures are based on the data recorded in fueliq-data.json.'
+  );
+  styleParagraph_(endNote, { size: 7, color: PDF.faint, before: 8 });
+}
+
+
+/* ---------- PDF building blocks ---------- */
+
+/** Applies consistent paragraph formatting. */
+function styleParagraph_(p, o) {
+  o = o || {};
+  p.setFontFamily('Arial');
+  p.setFontSize(o.size || 9);
+  p.setBold(!!o.bold);
+  p.setItalic(false);
+  p.setForegroundColor(o.color || PDF.ink);
+  p.setSpacingBefore(o.before || 0);
+  p.setSpacingAfter(o.after || 0);
+  p.setLineSpacing(o.line || 1.15);
+  p.setAlignment(o.align || DocumentApp.HorizontalAlignment.LEFT);
+  return p;
+}
+
+/** Small vertical gap. */
+function spacer_(container, pts) {
+  const p = container.appendParagraph(' ');
+  p.setFontSize(pts).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+  return p;
+}
+
+/** Writes several styled lines into a table cell. */
+function writeCell_(cell, lines) {
+  const first = cell.getChild(0).asParagraph();
+  lines.forEach(function(ln, i) {
+    const p = i === 0 ? first : cell.appendParagraph('');
+    p.setText(String(ln.text));
+    styleParagraph_(p, ln);
+  });
+}
+
+function padCell_(cell, top, right, bottom, left) {
+  cell.setPaddingTop(top);
+  cell.setPaddingRight(right);
+  cell.setPaddingBottom(bottom);
+  cell.setPaddingLeft(left);
+}
+
+function addSectionHeading_(body, text) {
+  const p = body.appendParagraph(text.toUpperCase());
+  styleParagraph_(p, { size: 8.5, bold: true, color: PDF.blue, before: 2, after: 5 });
+  return p;
+}
+
+/** Table of solid-colour segments, used for accent rules and progress bars. */
+function barTable_(body, segments, height) {
+  const segs = segments.filter(function(s) { return s.width > 0.5; });
+  if (!segs.length) return null;
+
+  const t = body.appendTable([segs.map(function() { return ''; })]);
+  t.setBorderWidth(0);
+
+  segs.forEach(function(s, i) {
+    t.setColumnWidth(i, s.width);
+    const c = t.getCell(0, i);
+    c.setBackgroundColor(s.color);
+    padCell_(c, 0, 0, 0, 0);
+    const p = c.getChild(0).asParagraph();
+    p.setText(' ');
+    p.setFontSize(1).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1);
+  });
+
+  t.getRow(0).setMinimumHeight(height || 6);
+  return t;
+}
+
+/** Navy title band with the vehicle name and month. */
+function addHeaderBand_(body, r, scheduled) {
+  const t = body.appendTable([['', '']]);
+  t.setBorderWidth(0);
+  t.setColumnWidth(0, 335);
+  t.setColumnWidth(1, PDF_CONTENT_WIDTH - 335);
+
+  const left = t.getCell(0, 0);
+  const right = t.getCell(0, 1);
+  [left, right].forEach(function(c) {
+    c.setBackgroundColor(PDF.navy);
+    padCell_(c, 12, 14, 12, 18);
+  });
+  right.setPaddingLeft(6);
+  right.setPaddingRight(18);
+
+  writeCell_(left, [
+    { text: 'FUELIQ  ·  MONTHLY VEHICLE REPORT', size: 7.5, bold: true, color: PDF.amber, after: 6 },
+    { text: String(r.vehicle || 'Vehicle'), size: 22, bold: true, color: PDF.white, after: 2, line: 1.05 },
+    { text: formatMonthLabel_(r.month), size: 11, color: '#cbd5e1' }
+  ]);
+
+  const R = DocumentApp.HorizontalAlignment.RIGHT;
+  writeCell_(right, [
+    { text: 'REPORT TYPE', size: 6.5, bold: true, color: PDF.faint, align: R },
+    { text: scheduled ? 'Automated monthly' : 'On-demand', size: 8.5, color: PDF.white, align: R, after: 7 },
+    { text: 'GENERATED', size: 6.5, bold: true, color: PDF.faint, align: R },
+    { text: Utilities.formatDate(new Date(), REPORT_TIMEZONE, 'dd MMM yyyy'), size: 8.5, color: PDF.white, align: R }
+  ]);
+
+  barTable_(body, [{ width: PDF_CONTENT_WIDTH, color: PDF.amber }], 4);
+}
+
+/** Slim header used at the top of page 2. */
+function addRunningHeader_(body, r) {
+  const p = body.appendParagraph(
+    'FUELIQ  ·  ' + String(r.vehicle || 'Vehicle').toUpperCase() + '  ·  ' + formatMonthLabel_(r.month).toUpperCase()
+  );
+  styleParagraph_(p, { size: 7.5, bold: true, color: PDF.muted, after: 3 });
+  barTable_(body, [{ width: PDF_CONTENT_WIDTH, color: PDF.amber }], 2);
+}
+
+/** 3-column grid of KPI cards. */
+function addKpiGrid_(body, cards) {
+  const cols = 3;
+  const rows = Math.ceil(cards.length / cols);
+  const grid = [];
+  for (let i = 0; i < rows; i++) {
+    const row = [];
+    for (let j = 0; j < cols; j++) row.push('');
+    grid.push(row);
+  }
+
+  const t = body.appendTable(grid);
+  t.setBorderColor(PDF.white);
+  t.setBorderWidth(4);
+
+  const colW = Math.floor(PDF_CONTENT_WIDTH / cols);
+  for (let j = 0; j < cols; j++) t.setColumnWidth(j, colW);
+
+  cards.forEach(function(card, i) {
+    const cell = t.getCell(Math.floor(i / cols), i % cols);
+    cell.setBackgroundColor(PDF.card);
+    padCell_(cell, 7, 10, 7, 11);
+
+    const lines = [
+      { text: card.label, size: 6.5, bold: true, color: card.accent, after: 3 },
+      { text: card.value, size: 15, bold: true, color: PDF.navy, after: 3, line: 1.05 },
+      { text: (card.sub && card.sub.text) || ' ', size: 7.5, color: (card.sub && card.sub.color) || PDF.muted }
+    ];
+    writeCell_(cell, lines);
+  });
+}
+
+/** Budget and efficiency progress bars. */
+function addPlanBars_(body, m) {
+  let shown = false;
+
+  if (m.budget) {
+    shown = true;
+    const pct = Number(m.budgetPct) || 0;
+    const color = pct > 100 ? PDF.red : (pct >= 85 ? PDF.amber : PDF.green);
+    const remaining = m.budget - m.totalSpend;
+
+    const label = body.appendParagraph(
+      'Monthly budget  ·  ' + money_(m.totalSpend) + ' of ' + money_(m.budget) + ' used (' + num_(pct) + '%)  ·  ' +
+      (remaining >= 0 ? money_(remaining) + ' remaining' : money_(-remaining) + ' over budget')
+    );
+    styleParagraph_(label, { size: 8, color: PDF.slate, after: 3 });
+    addProgress_(body, pct, color);
+    spacer_(body, 6);
+  }
+
+  if (m.targetKmpl && m.avgEfficiency != null) {
+    shown = true;
+    const pct = m.avgEfficiency / m.targetKmpl * 100;
+    const color = pct >= 100 ? PDF.green : (pct >= 90 ? PDF.amber : PDF.red);
+
+    const label = body.appendParagraph(
+      'Efficiency vs target  ·  ' + num_(m.avgEfficiency) + ' km/L against a ' + num_(m.targetKmpl) +
+      ' km/L target (' + num_(pct) + '% of target)'
+    );
+    styleParagraph_(label, { size: 8, color: PDF.slate, after: 3 });
+    addProgress_(body, pct, color);
+  }
+
+  if (!shown) {
+    const p = body.appendParagraph(
+      'Set a monthly budget and an efficiency target in FuelIQ to track performance against plan.'
+    );
+    styleParagraph_(p, { size: 8, color: PDF.muted });
+  }
+}
+
+function addProgress_(body, pct, color) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const filled = PDF_CONTENT_WIDTH * clamped / 100;
+  barTable_(body, [
+    { width: filled, color: color },
+    { width: PDF_CONTENT_WIDTH - filled, color: PDF.line }
+  ], 7);
+}
+
+/** Donut (spend split) beside a station bar chart. */
+function addChartsRow_(body, r, m) {
+  const t = body.appendTable([['', '']]);
+  t.setBorderWidth(0);
+  t.setColumnWidth(0, 200);
+  t.setColumnWidth(1, PDF_CONTENT_WIDTH - 200);
+
+  const left = t.getCell(0, 0);
+  const right = t.getCell(0, 1);
+  padCell_(left, 2, 6, 2, 0);
+  padCell_(right, 2, 0, 2, 6);
+
+  writeCell_(left, [{ text: 'Spend composition', size: 8, bold: true, color: PDF.slate, after: 2 }]);
+  const donut = createSpendPieChart_(m.fuelSpend || 0, m.otherSpend || 0);
+  if (donut) {
+    left.appendImage(donut).setWidth(170).setHeight(170 * 220 / 300);
+  } else {
+    left.appendParagraph('No spend recorded.').setFontSize(8).setForegroundColor(PDF.muted);
+  }
+
+  writeCell_(right, [{ text: 'Fuel station spend', size: 8, bold: true, color: PDF.slate, after: 2 }]);
+  const stations = createBarChart_(r.stationSpend, PDF.amber, 500, 200, 5);
+  if (stations) {
+    right.appendImage(stations).setWidth(270).setHeight(270 * 200 / 500);
+  } else {
+    right.appendParagraph('No fuel-station data.').setFontSize(8).setForegroundColor(PDF.muted);
+  }
+}
+
+/** Tagged list of insights. */
+function addInsightsTable_(body, insights) {
+  if (!insights.length) return;
+
+  const tones = {
+    'insight-positive': { tag: 'ON TRACK', bg: '#dcfce7', fg: '#166534' },
+    'insight-warning': { tag: 'ATTENTION', bg: '#fef3c7', fg: '#92400e' },
+    'insight-neutral': { tag: 'INSIGHT', bg: PDF.line, fg: PDF.slate }
+  };
+
+  const t = body.appendTable(insights.map(function() { return ['', '']; }));
+  t.setBorderColor(PDF.white);
+  t.setBorderWidth(3);
+  t.setColumnWidth(0, 78);
+  t.setColumnWidth(1, PDF_CONTENT_WIDTH - 78);
+
+  insights.forEach(function(item, i) {
+    const tone = tones[item.tone] || tones['insight-neutral'];
+    const tagCell = t.getCell(i, 0);
+    const textCell = t.getCell(i, 1);
+
+    tagCell.setBackgroundColor(tone.bg);
+    tagCell.setVerticalAlignment(DocumentApp.VerticalAlignment.CENTER);
+    padCell_(tagCell, 4, 4, 4, 4);
+    writeCell_(tagCell, [{ text: tone.tag, size: 6.5, bold: true, color: tone.fg, align: DocumentApp.HorizontalAlignment.CENTER }]);
+
+    textCell.setBackgroundColor(PDF.card);
+    padCell_(textCell, 4, 10, 4, 10);
+    writeCell_(textCell, [
+      { text: item.title, size: 8.5, bold: true, color: PDF.navy, after: 1 },
+      { text: stripHtml_(item.text || ''), size: 8, color: PDF.slate }
+    ]);
+  });
+}
+
+/** Amber box of exceptions, or a green all-clear box. */
+function addWatchpoints_(body, alerts) {
+  const t = body.appendTable([['']]);
+  const cell = t.getCell(0, 0);
+  t.setColumnWidth(0, PDF_CONTENT_WIDTH);
+  t.setBorderWidth(1);
+  padCell_(cell, 9, 12, 9, 12);
+
+  if (alerts.length) {
+    t.setBorderColor(PDF.amberLine);
+    cell.setBackgroundColor(PDF.amberBg);
+    const lines = [{ text: 'WATCHPOINTS', size: 7.5, bold: true, color: PDF.amberDark, after: 4 }];
+    alerts.slice(0, 5).forEach(function(a) {
+      lines.push({ text: '•  ' + stripHtml_(String(a)), size: 8.5, color: '#78350f', after: 2 });
+    });
+    writeCell_(cell, lines);
+  } else {
+    t.setBorderColor(PDF.greenLine);
+    cell.setBackgroundColor(PDF.greenBg);
+    writeCell_(cell, [
+      { text: 'ALL CLEAR', size: 7.5, bold: true, color: PDF.green, after: 3 },
+      { text: 'No budget or efficiency exceptions were flagged for this month.', size: 8.5, color: '#065f46' }
+    ]);
+  }
+}
+
+function styleBreakdownTable_(table) {
+  table.setBorderColor(PDF.line);
+  table.setBorderWidth(0.5);
+  table.setColumnWidth(0, 275);
+  table.setColumnWidth(1, 130);
+  table.setColumnWidth(2, PDF_CONTENT_WIDTH - 405);
+
+  for (let r = 0; r < table.getNumRows(); r++) {
+    const row = table.getRow(r);
+    for (let c = 0; c < row.getNumCells(); c++) {
+      const cell = row.getCell(c);
+      padCell_(cell, 4, 8, 4, 8);
+      const p = cell.getChild(0).asParagraph();
+      styleParagraph_(p, {
+        size: 8,
+        bold: r === 0,
+        color: r === 0 ? PDF.muted : PDF.ink,
+        align: c === 0 ? DocumentApp.HorizontalAlignment.LEFT : DocumentApp.HorizontalAlignment.RIGHT
+      });
+      if (r === 0) cell.setBackgroundColor(PDF.card);
+    }
+  }
+}
+
+function styleTransactionTable_(table) {
+  table.setBorderColor(PDF.line);
+  table.setBorderWidth(0.5);
+  const widths = [66, 52, 165, 60, 82, 90];
+  widths.forEach(function(w, i) { table.setColumnWidth(i, w); });
+
+  for (let r = 0; r < table.getNumRows(); r++) {
+    const row = table.getRow(r);
+    for (let c = 0; c < row.getNumCells(); c++) {
+      const cell = row.getCell(c);
+      padCell_(cell, 4, 6, 4, 6);
+      const p = cell.getChild(0).asParagraph();
+      styleParagraph_(p, {
+        size: 7.5,
+        bold: r === 0,
+        color: r === 0 ? PDF.white : PDF.ink,
+        align: c >= 3 ? DocumentApp.HorizontalAlignment.RIGHT : DocumentApp.HorizontalAlignment.LEFT
+      });
+      if (r === 0) cell.setBackgroundColor(PDF.navy);
+      else if (r % 2 === 0) cell.setBackgroundColor('#f8fafc');
+    }
+  }
+}
+
+function buildSimpleBreakdownTable_(obj) {
+  const source = obj || {};
+  const keys = sortedKeys_(source).slice(0, 8);
+  if (!keys.length) return null;
+
+  const total = keys.reduce(function(sum, k) { return sum + Number(source[k] || 0); }, 0);
+
+  const rows = [['Category', 'Amount', 'Share']];
+  keys.forEach(function(k) {
+    const v = Number(source[k] || 0);
+    rows.push([k, money_(v), total ? num_(v / total * 100) + '%' : '—']);
+  });
+  return rows;
+}
+
+
+/* ---------- Charts (Charts service -> PNG) ---------- */
+
+/** Donut chart of fuel vs other spend. */
+function createSpendPieChart_(fuel, other) {
+  const rows = [];
+  if (Number(fuel) > 0) rows.push(['Fuel', Number(fuel)]);
+  if (Number(other) > 0) rows.push(['Other expenses', Number(other)]);
+  if (!rows.length) return null;
+
+  const dt = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, 'Type')
+    .addColumn(Charts.ColumnType.NUMBER, 'Amount');
+  rows.forEach(function(r) { dt.addRow(r); });
+
+  const colors = rows.map(function(r) { return r[0] === 'Fuel' ? '#f59e0b' : '#3b82f6'; });
+
+  return Charts.newPieChart()
+    .setDataTable(dt.build())
+    .setColors(colors)
+    .setOption('pieHole', 0.55)
+    .setOption('pieSliceText', 'percentage')
+    .setOption('pieSliceTextStyle', { color: '#ffffff', fontSize: 15, bold: true })
+    .setOption('legend', { position: 'bottom', textStyle: { fontSize: 14, color: '#334155' } })
+    .setOption('chartArea', { left: 10, top: 10, width: '92%', height: '72%' })
+    .setOption('pieSliceBorderColor', '#ffffff')
+    .setOption('backgroundColor', '#ffffff')
+    .setDimensions(600, 440)
+    .build()
+    .getAs('image/png');
+}
+
+/** Horizontal bar chart; labels include the amount so no data table is needed. */
+function createBarChart_(obj, colour, width, height, maxBars) {
+  const source = obj || {};
+  const keys = sortedKeys_(source).slice(0, maxBars || 6);
+  if (!keys.length) return null;
+
+  const dt = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, 'Category')
+    .addColumn(Charts.ColumnType.NUMBER, 'Amount');
+
+  keys.forEach(function(k) {
+    const label = String(k).length > 20 ? String(k).slice(0, 19) + '…' : String(k);
+    dt.addRow([label + '  ·  ' + money_(source[k]), Number(source[k] || 0)]);
+  });
+
+  const scale = 2; // render at 2x for a crisp PDF
+  return Charts.newBarChart()
+    .setDataTable(dt.build())
+    .setColors([colour])
+    .setOption('legend', { position: 'none' })
+    .setOption('hAxis', { textStyle: { fontSize: 9 * scale, color: '#64748b' }, gridlines: { color: '#e2e8f0' }, minValue: 0 })
+    .setOption('vAxis', { textStyle: { fontSize: 10 * scale, color: '#334155' } })
+    .setOption('bar', { groupWidth: '62%' })
+    .setOption('chartArea', { left: '38%', top: 8, width: '58%', height: '82%' })
+    .setOption('backgroundColor', '#ffffff')
+    .setDimensions(width * scale, height * scale)
+    .build()
+    .getAs('image/png');
+}
+
+/** Line chart of km/L per refuelling, with the target as a dashed line. */
+function createEfficiencyChart_(fillSeries, target) {
+  const points = (fillSeries || []).filter(function(f) {
+    return f && typeof f.kmpl === 'number' && isFinite(f.kmpl);
+  });
+  if (points.length < 2) return null;
+
+  const hasTarget = Number(target) > 0;
+
+  const dt = Charts.newDataTable()
+    .addColumn(Charts.ColumnType.STRING, 'Fill')
+    .addColumn(Charts.ColumnType.NUMBER, 'Efficiency (km/L)');
+  if (hasTarget) dt.addColumn(Charts.ColumnType.NUMBER, 'Target');
+
+  points.forEach(function(f) {
+    const row = [shortDate_(f.date), Math.round(f.kmpl * 10) / 10];
+    if (hasTarget) row.push(Number(target));
+    dt.addRow(row);
+  });
+
+  const scale = 2;
+  const series = {
+    0: { color: '#2563eb', lineWidth: 3 * scale, pointSize: 5 * scale }
+  };
+  if (hasTarget) series[1] = { color: '#f59e0b', lineWidth: 2 * scale, pointSize: 0, lineDashStyle: [6, 4] };
+
+  return Charts.newLineChart()
+    .setDataTable(dt.build())
+    .setOption('series', series)
+    .setOption('legend', { position: 'top', textStyle: { fontSize: 9 * scale, color: '#475569' } })
+    .setOption('hAxis', { textStyle: { fontSize: 8 * scale, color: '#64748b' } })
+    .setOption('vAxis', { textStyle: { fontSize: 8 * scale, color: '#64748b' }, gridlines: { color: '#e2e8f0' } })
+    .setOption('chartArea', { left: 45 * scale, top: 28 * scale, width: '88%', height: '62%' })
+    .setOption('backgroundColor', '#ffffff')
+    .setDimensions(500 * scale, 130 * scale)
+    .build()
+    .getAs('image/png');
+}
+
+
+/* =====================================================
+   INSIGHTS
+   ===================================================== */
+
+function buildPdfInsights_(r) {
+  const m = r.metrics || {};
+  const cmp = r.comparison || null;
+  const insights = [];
+
+  const fuelShare = m.totalSpend > 0 ? (m.fuelSpend / m.totalSpend) * 100 : 0;
+  const avgFill = m.fills > 0 ? m.fuelSpend / m.fills : null;
+  const avgLitres = m.fills > 0 ? m.fuelLitres / m.fills : null;
+
+  if (m.budget) {
+    if (m.totalSpend > m.budget) {
+      insights.push({
+        title: 'Budget pressure',
+        text: 'Spend exceeded the monthly budget by ' + money_(m.totalSpend - m.budget) + '.',
+        tone: 'insight-warning'
+      });
+    } else {
+      insights.push({
+        title: 'Within budget',
+        text: money_(m.budget - m.totalSpend) + ' of the configured monthly budget remains (' +
+          num_(m.budgetPct) + '% used).',
+        tone: 'insight-positive'
+      });
+    }
+  } else {
+    insights.push({
+      title: 'Budget tracking',
+      text: 'No monthly budget is configured for this vehicle.',
+      tone: 'insight-neutral'
+    });
+  }
+
+  if (m.targetKmpl && m.avgEfficiency) {
+    const variance = m.avgEfficiency - m.targetKmpl;
+    if (variance >= 0) {
+      insights.push({
+        title: 'Efficiency on target',
+        text: 'Average efficiency of ' + num_(m.avgEfficiency) + ' km/L is ' + num_(variance) +
+          ' km/L above the configured target.',
+        tone: 'insight-positive'
+      });
+    } else {
+      insights.push({
+        title: 'Efficiency opportunity',
+        text: 'Average efficiency of ' + num_(m.avgEfficiency) + ' km/L is ' + num_(Math.abs(variance)) +
+          ' km/L below the configured target.',
+        tone: 'insight-warning'
+      });
+    }
+  }
+
+  if (cmp && m.totalSpend != null && cmp.totalSpend > 0) {
+    const pct = pctChange_(m.totalSpend, cmp.totalSpend);
+    if (pct !== null) {
+      insights.push({
+        title: 'Month on month',
+        text: 'Total spend is ' + (pct >= 0 ? 'up ' : 'down ') + num_(Math.abs(pct)) + '% versus ' +
+          formatMonthLabel_(cmp.month) + ' (' + money_(cmp.totalSpend) + ').',
+        tone: pct > 10 ? 'insight-warning' : 'insight-neutral'
+      });
+    }
+  }
+
+  if (m.distance && m.distance > 0) {
+    insights.push({
+      title: 'Operating intensity',
+      text: 'The vehicle covered ' + num_(m.distance) + ' km at ' + money2_(m.fuelCostPerKm) +
+        ' fuel cost per km (' + money2_(m.tcoPerKm) + ' all-in).',
+      tone: 'insight-neutral'
+    });
+  }
+
+  if (m.totalSpend > 0) {
+    if (fuelShare >= 80) {
+      insights.push({
+        title: 'Fuel-led cost profile',
+        text: 'Fuel was ' + num_(fuelShare) + '% of total recorded spend, so fuel price and efficiency are the main cost drivers.',
+        tone: 'insight-warning'
+      });
+    } else {
+      insights.push({
+        title: 'Mixed cost profile',
+        text: 'Fuel was ' + num_(fuelShare) + '% of total spend; non-fuel expenses made up the remainder.',
+        tone: 'insight-neutral'
+      });
+    }
+  }
+
+  if (m.bestKmpl != null && m.worstKmpl != null && m.fills > 1) {
+    insights.push({
+      title: 'Efficiency range',
+      text: 'Best refuelling returned ' + num_(m.bestKmpl) + ' km/L and the weakest ' + num_(m.worstKmpl) + ' km/L.',
+      tone: 'insight-neutral'
+    });
+  }
+
+  if (avgFill !== null && avgLitres !== null) {
+    insights.push({
+      title: 'Typical refuelling',
+      text: 'Average refuelling spend was ' + money_(avgFill) + ' for approximately ' + num_(avgLitres) + ' litres per fill.',
+      tone: 'insight-neutral'
+    });
+  }
+
+  return insights.slice(0, 6);
+}
+
+
+/* =====================================================
+   PLAIN-TEXT FALLBACK
+   ===================================================== */
+
+function buildPlainText_(reports) {
+  return reports.map(function(r) {
+    const m = r.metrics || {};
+    return [
+      'FuelIQ Monthly Report',
+      r.vehicle + ' — ' + formatMonthLabel_(r.month),
+      '',
+      'Total Spend: ' + money_(m.totalSpend),
+      'Fuel Spend: ' + money_(m.fuelSpend),
+      'Other Expenses: ' + money_(m.otherSpend),
+      'Distance: ' + withUnit_(num_(m.distance), ' km'),
+      'Average Efficiency: ' + withUnit_(num_(m.avgEfficiency), ' km/L'),
+      'Average Fuel Price: ' + withUnit_(money2_(m.avgFuelPrice), '/L'),
+      'Fuel Cost / KM: ' + money2_(m.fuelCostPerKm),
+      'TCO / KM: ' + money2_(m.tcoPerKm),
+      'Fills: ' + (m.fills || 0),
+      '',
+      'Alerts:',
+      (r.alerts || []).length
+        ? r.alerts.map(function(a) { return '- ' + a; }).join('\n')
+        : '- No immediate exceptions.'
+    ].join('\n');
+  }).join('\n\n------------------------------\n\n');
+}
+
+
+/* =====================================================
+   HELPERS
+   ===================================================== */
+
+function getReportRecipient_() {
+  // The script is deployed as the owner, so the effective user is the
+  // Google account that receives the email.
+  return Session.getEffectiveUser().getEmail() || Session.getActiveUser().getEmail();
+}
+
+function maskEmail_(email) {
+  const s = String(email || '');
+  const at = s.indexOf('@');
+  if (at < 1) return s ? '***' : '';
+  return s.charAt(0) + '***' + s.slice(at);
+}
+
+function isMonthlyTriggerEnabled_() {
+  return ScriptApp.getProjectTriggers().some(function(t) {
+    return t.getHandlerFunction() === 'sendPreviousMonthReport';
+  });
+}
+
+function sum_(arr, key) {
+  return arr.reduce(function(s, x) {
+    return s + (Number(x[key]) || 0);
+  }, 0);
+}
+
+function sortedKeys_(obj) {
+  return Object.keys(obj || {})
+    .filter(function(k) { return Number(obj[k] || 0) !== 0; })
+    .sort(function(a, b) { return Number(obj[b] || 0) - Number(obj[a] || 0); });
+}
+
+/** 'YYYY-MM' -> previous 'YYYY-MM'. */
+function prevMonthKey_(ym) {
+  const parts = String(ym || '').split('-');
+  let y = Number(parts[0]);
+  let mo = Number(parts[1]) - 1;
+  if (mo < 1) { mo = 12; y -= 1; }
+  return y + '-' + ('0' + mo).slice(-2);
+}
+
+function pctChange_(cur, prev) {
+  const c = Number(cur);
+  const p = Number(prev);
+  if (cur == null || prev == null || !isFinite(c) || !isFinite(p) || p <= 0) return null;
+  return (c - p) / p * 100;
+}
+
+/** Month-on-month line for a KPI card. higherIsBetter: true / false / null (neutral). */
+function deltaSub_(pct, prevLabel, higherIsBetter) {
+  if (pct === null || !isFinite(pct)) return { text: ' ', color: PDF.muted };
+  if (Math.abs(pct) < 0.05) return { text: 'Flat vs ' + prevLabel, color: PDF.muted };
+
+  const up = pct >= 0;
+  let color = PDF.muted;
+  if (higherIsBetter === true) color = up ? PDF.green : PDF.red;
+  if (higherIsBetter === false) color = up ? PDF.red : PDF.green;
+
+  return { text: (up ? '▲ ' : '▼ ') + num_(Math.abs(pct)) + '% vs ' + prevLabel, color: color };
+}
+
+/** Efficiency subtitle: change vs last month, else distance from target. */
+function effDeltaSub_(m, cmp, prevLabel) {
+  if (m.avgEfficiency != null && cmp && cmp.avgEfficiency != null) {
+    const diff = m.avgEfficiency - cmp.avgEfficiency;
+    if (Math.abs(diff) < 0.05) return { text: 'Flat vs ' + prevLabel, color: PDF.muted };
+    return {
+      text: (diff >= 0 ? '▲ ' : '▼ ') + num_(Math.abs(diff)) + ' km/L vs ' + prevLabel,
+      color: diff >= 0 ? PDF.green : PDF.red
+    };
+  }
+  if (m.avgEfficiency != null && m.targetKmpl) {
+    const diff = m.avgEfficiency - m.targetKmpl;
+    return {
+      text: (diff >= 0 ? 'On target' : num_(Math.abs(diff)) + ' km/L below target'),
+      color: diff >= 0 ? PDF.green : PDF.red
+    };
+  }
+  return { text: ' ', color: PDF.muted };
+}
+
+
+/* ---------- Formatting ---------- */
+
+/**
+ * Formats a number with Indian digit grouping (12,34,567.5).
+ * Apps Script's toLocaleString('en-IN') does not reliably group this way,
+ * so grouping is done manually.
+ */
+function fmtNumber_(v, decimals, trimZeros) {
+  const n = Number(v);
+  const neg = n < 0;
+  const fixed = Math.abs(n).toFixed(decimals);
+  const parts = fixed.split('.');
+
+  const intPart = parts[0];
+  let grouped = intPart;
+  if (intPart.length > 3) {
+    const last3 = intPart.slice(-3);
+    const rest = intPart.slice(0, -3);
+    grouped = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',') + ',' + last3;
+  }
+
+  let dec = parts[1] || '';
+  if (trimZeros) dec = dec.replace(/0+$/, '');
+
+  return (neg ? '-' : '') + grouped + (dec ? '.' + dec : '');
+}
+
+function isBlank_(v) {
+  return v == null || v === '' || !isFinite(Number(v));
+}
+
+/** Whole rupees: ₹1,23,456 */
+function money_(v) {
+  if (isBlank_(v)) return '—';
+  const n = Math.round(Number(v));
+  return (n < 0 ? '-' : '') + '₹' + fmtNumber_(Math.abs(n), 0, false);
+}
+
+/** Rupees with paise, for per-litre and per-km values: ₹104.53 */
+function money2_(v) {
+  if (isBlank_(v)) return '—';
+  const n = Number(v);
+  return (n < 0 ? '-' : '') + '₹' + fmtNumber_(Math.abs(n), 2, false);
+}
+
+function num_(v) {
+  return isBlank_(v) ? '—' : fmtNumber_(Number(v), 1, true);
+}
+
+/** Appends a unit unless the value is the "—" placeholder. */
+function withUnit_(text, unit) {
+  return text === '—' ? text : text + unit;
+}
+
+function formatMonthLabel_(ym) {
+  const parts = String(ym || '').split('-');
+  if (parts.length !== 2 || !MONTH_NAMES[Number(parts[1]) - 1]) return ym || '';
+  return MONTH_NAMES[Number(parts[1]) - 1] + ' ' + parts[0];
+}
+
+function shortMonthLabel_(ym) {
+  const parts = String(ym || '').split('-');
+  if (parts.length !== 2 || !MONTH_SHORT[Number(parts[1]) - 1]) return ym || '';
+  return MONTH_SHORT[Number(parts[1]) - 1] + ' ' + parts[0];
+}
+
+/** '2026-09-05' -> '5 Sep 2026' (no timezone maths, so no off-by-one days). */
+function fmtDate_(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  if (!m) return String(s || '');
+  return Number(m[3]) + ' ' + MONTH_SHORT[Number(m[2]) - 1] + ' ' + m[1];
+}
+
+/** '2026-09-05' -> '5 Sep' */
+function shortDate_(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  if (!m) return String(s || '');
+  return Number(m[3]) + ' ' + MONTH_SHORT[Number(m[2]) - 1];
+}
+
+function stripHtml_(value) {
+  return String(value || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function esc_(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function json_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
