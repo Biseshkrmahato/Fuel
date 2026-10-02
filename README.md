@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⛽ FuelIQ
+# ⛽ Fuel IQ
 
 **Premium vehicle management dashboard: fuel, expenses, efficiency, running costs and reminders, all in your browser.**
 
