@@ -111,6 +111,126 @@
 
   /* ── KPI CARDS ── */
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+
+  /* chart tabs, sparklines, heatmap */
+  .chart-tabs{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+  .chart-tabs button{background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:8px 18px;border-radius:999px;font:inherit;font-size:13px;cursor:pointer}
+  .chart-tabs button.active{background:var(--amber);border-color:var(--amber);color:#0f1117;font-weight:600}
+  .chart-panel:not(.active){display:none!important}.chart-panel.active{display:grid}
+  .spark{margin-top:10px;height:28px;opacity:.9}
+  #calHeatGrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,14px);gap:3px;overflow-x:auto;padding-bottom:6px}
+  #calHeatGrid i{width:14px;height:14px;border-radius:3px;background:var(--border);display:block}
+
+
+
+
+  /* ── Decorated Home ── */
+  .hh{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px;align-items:center;padding:26px 28px;margin-bottom:14px;border-radius:22px;border:1px solid rgba(245,158,11,.35);background:radial-gradient(circle at 92% 12%,rgba(249,115,22,.28),transparent 45%),linear-gradient(135deg,rgba(245,158,11,.22),rgba(245,158,11,.05) 65%),var(--bg2)}
+  .hh::after{content:"⛽";position:absolute;right:-8px;bottom:-26px;font-size:150px;opacity:.06;transform:rotate(-12deg);pointer-events:none}
+  .hh-hi{font-size:13px;color:var(--text2);margin:0}
+  .hh-t{font-size:26px;font-weight:700;color:var(--text);margin:4px 0 12px;line-height:1.2}
+  .hh-move{display:inline-flex;gap:8px;align-items:flex-start;padding:10px 14px;border-radius:14px;background:rgba(245,158,11,.16);border:1px solid rgba(245,158,11,.4);font-size:14px;color:var(--text);max-width:520px}
+  .hh-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .hh-chip{padding:6px 12px;border-radius:999px;background:var(--bg3);border:1px solid var(--border);font-size:12px;color:var(--text2)}
+  .hh-chip b{color:var(--text);font-family:var(--font-mono);margin-left:4px}
+  .hh-ring{position:relative;width:170px;height:170px;margin:0 auto}
+  .hh-ring svg{transform:rotate(-90deg)}
+  .hh-ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .hh-ring .n{font-family:var(--font-mono);font-size:34px;font-weight:700;color:var(--text);line-height:1}
+  .hh-ring .u{font-size:12px;color:var(--text2);margin-top:4px}
+  .hh-ring .l{font-size:11px;color:var(--text3);margin-top:2px}
+  .hh-acts{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
+  .hh-act{display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:14px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font:inherit;font-size:13px;cursor:pointer}
+  .hh-act.p{background:var(--amber);border-color:var(--amber);color:#0f1117;font-weight:700}
+  .hh-glance{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+  .hh-g{display:flex;gap:12px;align-items:center;padding:14px 16px;border-radius:16px;background:var(--bg2);border:1px solid var(--border)}
+  .hh-g .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}
+  .hh-g .v{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--text);margin:0}
+  .hh-g .k{font-size:11px;color:var(--text3);margin:0}
+  .hh-g .pb{height:5px;border-radius:3px;background:var(--bg3);margin-top:6px;overflow:hidden}.hh-g .pb i{display:block;height:100%}
+  .goal{border-radius:18px;background:linear-gradient(160deg,rgba(var(--tint),.13),transparent 60%),var(--bg2);border-color:rgba(var(--tint),.28)}
+  .goal-save{--tint:16,185,129}.goal-own{--tint:139,92,246}.goal-stay{--tint:245,158,11}.goal-mile{--tint:59,130,246}
+  .hc-h{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+  .hc-ic{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(var(--tint),.2);flex:none}
+  .goal .hc-link{color:rgb(var(--tint));font-weight:700;filter:brightness(1.1)}
+  @media (max-width:768px){.hh{grid-template-columns:1fr;padding:20px}.hh-t{font-size:22px}.hh-glance{grid-template-columns:1fr}}
+  /* ── Goal pages + Home ── */
+  .goal-page{display:flex;flex-direction:column;gap:14px}
+  .home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .home-banner{border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.12);border-radius:14px;padding:16px 20px;margin-bottom:14px}
+  .home-banner .k{font-size:12px;font-weight:700;color:var(--amber);margin:0 0 4px}
+  .home-banner p{margin:0;font-size:16px;color:var(--text)}
+  .hc-k{font-size:12px;font-weight:700;color:var(--text3);margin:0}
+  .hc-v{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text);margin:8px 0 6px;line-height:1.25}
+  .hc-link{display:inline-block;margin-top:12px;font-size:13px;color:var(--amber);cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+  .hc-li{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--border);color:var(--text)}
+  .hc-li span:last-child{color:var(--text2);text-align:right}
+  @media (max-width:768px){.home-grid{grid-template-columns:1fr}}
+  /* ── Insights tab ── */
+  #insightsTab{display:flex;flex-direction:column;gap:14px}
+  .in-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .in-h{font-size:15px;font-weight:700;color:var(--text);margin:0 0 4px}
+  .in-p{font-size:12px;color:var(--text2);margin:0 0 12px}
+  .in-row{display:grid;grid-template-columns:minmax(70px,1fr) 2fr auto;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:13px}
+  .in-row:first-of-type{border-top:0}
+  .in-row b{font-family:var(--font-mono);color:var(--text)}
+  .in-win{border:1px solid rgba(16,185,129,.4);background:rgba(16,185,129,.1);border-radius:12px;padding:14px 16px;font-size:14px;color:var(--text)}
+  .in-win strong{color:var(--green)}
+  .in-big{font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--text);margin:0}
+  .in-wi label{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:12px}
+  .in-wi input[type=range]{width:100%;accent-color:var(--amber)}
+  .main-tabs{overflow-x:auto;white-space:nowrap}
+  @media (max-width:768px){.in-grid{grid-template-columns:1fr}}
+  /* ── Overview v2 (matches design mockup) ── */
+  .ovw-old{display:none!important}
+  .insight-line{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);border-left:1px solid rgba(245,158,11,.35);color:var(--text);margin-bottom:16px}
+  #ovw{display:flex;flex-direction:column;gap:14px}
+  .ov-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 20px;min-width:0}
+  .ov-lbl{font-size:12px;color:var(--text3);margin:0 0 4px;font-weight:600}
+  .ov-big{font-family:var(--font-mono);font-size:34px;font-weight:700;color:var(--text);line-height:1.1;margin:2px 0 10px}
+  .ov-big small{font-size:14px;font-weight:500;color:var(--text2);margin-left:4px}
+  .ov-bar{height:7px;border-radius:4px;background:var(--bg3);overflow:hidden;display:flex}
+  .ov-bar i{display:block;height:100%}
+  .ov-sub{font-size:12px;color:var(--text2);margin:8px 0 0}
+  .ov-hero{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .ov-mid{display:grid;grid-template-columns:minmax(0,1.7fr) minmax(0,1fr);gap:14px}
+  .ov-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  .ov-stat{background:var(--bg3);border-radius:10px;padding:12px 14px;min-width:0}
+  .ov-stat .l{font-size:11px;color:var(--text3);font-weight:600}
+  .ov-stat .v{font-family:var(--font-mono);font-size:19px;font-weight:700;color:var(--text);margin:2px 0}
+  .ov-stat .v .kpi-unit{font-size:11px;margin-left:2px}
+  .ov-stat .s{font-size:11px;color:var(--text2)}
+  .ov-stat .spark{margin-top:6px;height:22px}
+  .ov-line{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;color:var(--text)}
+  .ov-line span{display:block;font-size:12px;color:var(--text2)}
+  #ovwAlerts .alert-stack{margin:0}
+  @media (max-width:1024px){.ov-stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:768px){.ov-hero,.ov-mid{grid-template-columns:1fr}.ov-big{font-size:30px}}
+  @media (max-width:480px){.ov-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  /* ── UI refresh: hierarchy, single accent, tabs ── */
+  .main-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin:0 0 24px}
+  .main-tabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text2);font:inherit;font-size:14px;padding:10px 18px;cursor:pointer;margin-bottom:-1px}
+  .main-tabs button.active{color:var(--text);border-bottom-color:var(--amber);font-weight:600}
+  .tab-off{display:none!important}
+  .kpi-card::before{display:none}
+  .kpi-card{padding:18px 18px;box-shadow:none}
+  .kpi-card:hover{transform:none;box-shadow:none;border-color:var(--border2)}
+  .kpi-label{margin-bottom:8px;letter-spacing:.4px}
+  .kpi-value{font-size:24px;background:none;-webkit-text-fill-color:var(--text);color:var(--text)}
+  .kpi-unit{-webkit-text-fill-color:var(--text2)}
+  .kpi-sub{background:none;border:0;padding:0;margin-top:8px;font-size:12px}
+  .kpi-card.hero{padding:22px}
+  .kpi-card.hero .kpi-value{font-size:42px}
+  .kpi-card.hero .kpi-label{font-size:12px;color:var(--amber)}
+  .insight-line{display:flex;gap:10px;align-items:center;padding:12px 16px;margin:0 0 20px;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:12px;background:var(--bg2);font-size:14px;color:var(--text2)}
+  @media (min-width:1025px){
+    .kpi-grid{grid-template-columns:repeat(12,1fr)!important;gap:14px!important}
+    .kpi-card{grid-column:span 4;order:1}
+    .kpi-card.hero{order:0}
+  }
+  @media (max-width:768px){ .pie-chart-col{height:150px!important} .chart-tabs button{padding:7px 14px} }
+  @media print{ .tab-off{display:block!important} .chart-panel{display:grid!important} .main-tabs,.chart-tabs{display:none!important} }
+  @media (max-width:1024px){ .kpi-card.hero .kpi-value{font-size:30px} }
   .kpi-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 24px 20px; transition: var(--trans); position: relative; overflow: hidden; box-shadow: var(--shadow); }
   .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; opacity: 0.8;}
   .kpi-card.amber::before { background: var(--amber); } .kpi-card.green::before { background: var(--green); }
@@ -140,8 +260,8 @@
      so they never force a card (and the page) wider than its container. */
   canvas { max-width: 100%; }
 
-  .pie-charts-wrap { display: flex; height: 240px; gap: 16px; }
-  .pie-chart-col { flex: 1; min-width: 0; position: relative; }
+  .pie-charts-wrap { display: flex; flex-direction: column; height: auto; gap: 14px; }
+  .pie-chart-col { min-width: 0; position: relative; height: 130px; }
 
   /* ── FORMS & TABS ── */
   .form-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 32px; box-shadow: var(--shadow); }
@@ -510,7 +630,7 @@
 
 <div id="pullIndicator">🔄 Pull to sync with Google Drive</div>
 <nav class="bottom-nav" id="bottomNav" aria-label="Primary">
-  <button class="bn-item active" aria-label="Home" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <button class="bn-item active" aria-label="Home" onclick="showTab('overview');window.scrollTo({top:0,behavior:'smooth'})">
     <span class="bn-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg></span><span class="bn-label">Home</span>
   </button>
   <button class="bn-item" aria-label="Analytics" onclick="document.getElementById('analyticsSection').scrollIntoView({behavior:'smooth', block:'start'})">
@@ -542,6 +662,7 @@
   </div>
 
   <div class="alert-stack" id="alertStack"></div>
+  <div class="insight-line" id="insightLine" style="display:none"></div>
 
   <section>
     <div class="kpi-grid">
@@ -677,7 +798,7 @@
     </div>
 
     <div class="chart-card">
-      <div class="chart-title" id="ctEff">Fuel Economy Trend <span class="chart-subtitle">Rolling avg KMPL per fill</span></div>
+      <div class="chart-title" id="ctEff">Fuel Economy Trend <span class="chart-subtitle">Rolling avg KMPL per fill · hollow red = unusual</span></div>
       <div style="position:relative; height:250px;"><canvas id="kmplChart"></canvas></div>
     </div>
 
@@ -687,7 +808,7 @@
         <div style="position:relative; height:240px;"><canvas id="expenseCatChart"></canvas></div>
       </div>
       <div class="chart-card">
-        <div class="chart-title" id="ctCostTrend">Cost / KM Trend <span class="chart-subtitle">Monthly, Fuel vs TCO</span></div>
+        <div class="chart-title" id="ctCostTrend">Cost / KM Trend <span class="chart-subtitle">Monthly, Fuel vs TCO · 🔧 service 💸 big expense</span></div>
         <div style="position:relative; height:240px;"><canvas id="costTrendChart"></canvas></div>
       </div>
     </div>
@@ -701,6 +822,11 @@
         <div class="chart-title" id="ctInterval">Fill Interval Pattern <span class="chart-subtitle">Days between fills</span></div>
         <div style="position:relative; height:240px;"><canvas id="fillIntervalChart"></canvas></div>
       </div>
+    </div>
+
+    <div class="chart-card" id="calHeat">
+      <div class="chart-title">Activity Heatmap <span class="chart-subtitle">Last 26 weeks · amber = fuel day, purple = other expense · darker = higher spend</span></div>
+      <div id="calHeatGrid"></div>
     </div>
 
     <div class="chart-card">
@@ -1105,8 +1231,11 @@ function initBottomNav() {
   function updateActive() {
     ticking = false;
     const y = window.scrollY + window.innerHeight * 0.35;
+    const tab = (document.querySelector('.main-tabs button.active') || {}).dataset;
+    const name = tab ? tab.tab : 'overview';
     let current = targets[0];
-    for (const t of targets) { if (t.el.offsetTop <= y) current = t; }
+    if (name !== 'overview' && name !== 'log') current = targets.find(t => t.item === items[1]) || current;
+    else if (name === 'log') { const ex = targets.find(t => t.item === items[3]), fm = targets.find(t => t.item === items[2]); current = (ex && ex.el.offsetTop <= y) ? ex : (fm || current); }
     items.forEach(i => i.classList.remove('active'));
     current.item.classList.add('active');
   }
@@ -1114,6 +1243,7 @@ function initBottomNav() {
     if (!ticking) { requestAnimationFrame(updateActive); ticking = true; }
   }, { passive: true });
   updateActive();
+  window._navSpy = updateActive;
 }
 
 function save(sync = true) {
@@ -2364,10 +2494,15 @@ function refreshUI() {
   });
 
   const totalSpend = fuelSpend + otherSpend;
-  const avgKmpl = kmplValues.length ? kmplValues.reduce((a,b)=>a+b,0)/kmplValues.length : 0;
+  // Distance runs from the FIRST fill's odometer, so the first fill's litres/cost (burned before that point) are excluded from per-km maths.
+  const firstFill = fuelOnly.length >= 2 ? fuelOnly[0] : null;
+  const fuelForKm = firstFill ? fuelSpend - (firstFill.amt || 0) : fuelSpend, litresForKm = firstFill ? totalLitres - (firstFill.litres || 0) : totalLitres;
+  const meanKmpl = kmplValues.length ? kmplValues.reduce((a,b)=>a+b,0)/kmplValues.length : 0;
+  // True average = distance ÷ litres burned (weights every km equally). The plain mean of per-fill values overstates it. Needs 5+ fills to be stable.
+  const avgKmpl = (fuelOnly.length >= 5 && totalDist > 0 && litresForKm > 0) ? totalDist / litresForKm : meanKmpl;
   const avgPrice = totalLitres ? fuelSpend / totalLitres : 0;
-  const costKm = totalDist ? fuelSpend / totalDist : 0;
-  const tcoKm = totalDist ? totalSpend / totalDist : 0;
+  const costKm = totalDist ? fuelForKm / totalDist : 0;
+  const tcoKm = totalDist ? (fuelForKm + otherSpend) / totalDist : 0;
 
   const fRs = v => '₹' + Math.round(v||0).toLocaleString('en-IN');
   const fN = v => (v||0).toLocaleString('en-IN', {maximumFractionDigits:1});
@@ -2416,7 +2551,8 @@ function refreshUI() {
   document.getElementById('kFillsSub').textContent = `${fillsCount} ${VU.fills}, ${fN(totalLitres)}${VU.ev ? ' kWh' : 'L'}`;
 
   // Avg monthly spend & distance — spread totals across the distinct months present in the filtered logs
-  const distinctMonths = new Set(logs.map(l => l.date.slice(0,7))).size || 1;
+  const lDates = logs.map(l => l.date).sort();
+  const distinctMonths = lDates.length > 1 ? Math.max(1, (new Date(lDates[lDates.length-1]) - new Date(lDates[0])) / 86400000 / 30.44) : 1;
   const avgMonthlySpend = totalSpend / distinctMonths;
   const avgMonthlyDist = totalDist / distinctMonths;
   document.getElementById('kAvgMonthlySpend').textContent = totalSpend ? fRs(avgMonthlySpend) : '—';
@@ -2434,8 +2570,12 @@ function refreshUI() {
   }
   
   updateGauge(avgKmpl, isStrict);
+  renderInsight(logs, avgKmpl);
   renderTable(getTableLogs(), kmplData, isStrict, outliers);
   renderCharts(logs, kmplData, outliers);
+  renderOverview(logs, avgKmpl);
+  renderInsights(logs, kmplData);
+  renderHome(logs, avgKmpl, kmplData);
   renderVehicleComparison();
 }
 
@@ -2490,16 +2630,233 @@ function chartsAvailable() {
   return false;
 }
 
+function setupChartTabs() {
+  const first = document.getElementById('spendChart'); if (!first) return;
+  const sec = first.closest('section'); window._cards = {};
+  sec.querySelectorAll('.chart-card').forEach(c => { const cv = c.querySelector('canvas'); window._cards[(cv && cv.id) || c.id] = c; });
+  sec.id = sec.id || 'analyticsSection';
+}
+
+function showTab(name) {
+  document.querySelectorAll('.main-tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('[data-tab-panel]').forEach(el => el.classList.toggle('tab-off', !el.dataset.tabPanel.split(' ').includes(name)));
+  if (window._navSpy) window._navSpy();
+  if (name !== 'log') setTimeout(() => Object.values(charts).forEach(c => c && c.resize && c.resize()), 30);
+}
+function setupMainTabs() {
+  const main = document.querySelector('main'); if (!main) return;
+  const K = window._cards || {}, ALL = 'overview save own stay mileage';
+  const pairUp = pg => { let pend = null; [...pg.children].forEach(c => { if (c.style.gridColumn) { if (pend) pend.style.gridColumn = '1 / -1'; pend = null; } else pend = pend ? null : c; }); if (pend) pend.style.gridColumn = '1 / -1'; };
+  const grid = (ids, wide) => { const d = document.createElement('div'); d.className = 'charts-grid'; ids.forEach(i => { if (K[i]) { if (wide && wide.includes(i)) K[i].style.gridColumn = '1 / -1'; d.appendChild(K[i]); } }); pairUp(d); return d; };
+  const page = (id, key, html) => { const d = document.createElement('div'); d.id = id; d.className = 'goal-page'; d.dataset.tabPanel = key; if (html) d.innerHTML = html; return d; };
+  const secs = [...main.children].filter(k => k.tagName === 'SECTION');
+  let gauge = null;
+  secs.forEach(k => {
+    if (k.id === 'vehicleCompareSection') k.dataset.tabPanel = 'own';
+    else if (k.querySelector('#gaugeSvg')) gauge = k;
+    else if (k.querySelector('#formPanel, #logExplorerSection')) k.dataset.tabPanel = 'log';
+    else { k.dataset.tabPanel = 'own'; k.classList.add('ovw-old'); }
+  });
+  [...main.children].forEach(k => { if (k.matches('.section-header')) k.dataset.tabPanel = ALL; else if (k.matches('.insight-line')) k.dataset.tabPanel = 'overview'; });
+  const home = page('ovw', 'overview', '<div id="homeBanner"></div><div class="home-grid" id="homeGrid"></div>');
+  const save = page('pageSave', 'save', '<div id="inSave"></div>'); save.appendChild(grid(['priceTrendChart', 'usageChart']));
+  const own = page('pageOwn', 'own', '<div class="ov-hero" id="ovwHero"></div><div class="ov-stats" id="ovwStats"></div><div hidden id="ovwChart"></div><span hidden id="ovwChartNote"></span>'); own.appendChild(grid(['spendChart', 'costTrendChart', 'cumSpendChart', 'expenseCatChart', 'yearlyTcoChart']));
+  const stay = page('pageStay', 'stay', '<div class="ov-card"><p class="ov-lbl">NEEDS ATTENTION</p><div id="ovwAlerts"></div><div id="ovwLines"></div><button class="hc-link" onclick="openReminderModal()">Manage reminders</button></div><div id="inStay"></div>');
+  const mile = page('pageMileage', 'mileage', '<div id="gaugeSlot"></div><div id="inMile"></div>'); mile.appendChild(grid(['kmplChart', 'effPriceChart', 'fillIntervalChart', 'runChart', 'odoChart', 'calHeat'], ['kmplChart', 'calHeat']));
+  if (gauge) mile.querySelector('#gaugeSlot').appendChild(gauge);
+  const first = secs.find(x => x.dataset.tabPanel === 'log' || x.classList.contains('ovw-old')) || null;
+  [home, save, own, stay, mile].forEach(pg => main.insertBefore(pg, first));
+  const as = document.getElementById('alertStack'); if (as) stay.querySelector('#ovwAlerts').appendChild(as);
+  const bar = document.createElement('div'); bar.className = 'main-tabs';
+  [['overview', 'Home'], ['save', 'Save'], ['own', 'Own'], ['stay', 'Stay on track'], ['mileage', 'Mileage'], ['log', 'Log']].forEach(([k, l]) => { const b = document.createElement('button'); b.dataset.tab = k; b.textContent = l; b.onclick = () => showTab(k); bar.appendChild(b); });
+  main.insertBefore(bar, main.firstChild);
+  const sv = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (o) { const p = this.closest && this.closest('[data-tab-panel]'); if (p && p.classList.contains('tab-off')) showTab(p.dataset.tabPanel.split(' ')[0]); return sv.call(this, o); };
+  showTab('overview');
+}
+
+function renderInsight(logs, avgKmpl) {
+  const el = document.getElementById('insightLine'); if (!el) return;
+  const parts = [], t = Number(getEffTarget()) || 0, VU = vUnits(appData.settings.activeVehicle);
+  if (t && avgKmpl) { const d = avgKmpl - t; parts.push(`Efficiency is ${Math.abs(d).toFixed(1)} ${VU.eff} ${d < 0 ? 'below' : 'above'} your ${t} target`); }
+  const by = {}; logs.filter(l => l.type === 'fuel' && l.ppl).forEach(l => { const m = l.date.slice(0,7); (by[m] = by[m] || []).push(l.ppl); });
+  const ms = Object.keys(by).sort();
+  if (ms.length >= 2) { const av = a => a.reduce((x,y) => x+y, 0) / a.length; const c = av(by[ms[ms.length-1]]), q = av(by[ms[ms.length-2]]); if (q) { const pc = (c - q) / q * 100; parts.push(`${VU.ev ? 'charging' : 'fuel'} price is ${Math.abs(pc).toFixed(1)}% ${pc >= 0 ? 'up' : 'down'} on the previous month`); } }
+  el.style.display = parts.length ? 'flex' : 'none';
+  el.textContent = parts.length ? parts.join(', and ').replace(/^./, ch => ch.toUpperCase()) + '.' : '';
+}
+
+
+
+function renderInsights(logs, kmplData) {
+  const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const inr = v => '₹' + Math.round(v).toLocaleString('en-IN');
+  const put = (id, h) => { const e = document.getElementById(id); if (e) e.innerHTML = h; };
+  const veh = appData.settings.activeVehicle, VU = vUnits(veh);
+  window._ins = {};
+  const byDate = (a, b) => a.date.localeCompare(b.date);
+  const fuel = logs.filter(l => l.type === 'fuel' && l.litres > 0 && l.ppl > 0).sort(byDate);
+  if (fuel.length < 4) { const m = '<div class="ov-card"><p class="in-h">Unlocks after a few fills</p><p class="in-p">Log at least 4 fill-ups and this page will compare stations, weekdays and driving modes, forecast your spend and let you test what-if scenarios.</p></div>'; put('inSave', m); put('inStay', m); put('inMile', m); return; }
+  const day = (a, b) => (new Date(b) - new Date(a)) / 864e5;
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const med = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  const wavg = a => a.reduce((t, l) => t + l.amt, 0) / a.reduce((t, l) => t + l.litres, 0);
+  // Price benchmark per month (only months with 2+ fills), so a price rise over time is not mistaken for a "bad station"
+  const byM = {}; fuel.forEach(l => (byM[l.date.slice(0, 7)] = byM[l.date.slice(0, 7)] || []).push(l));
+  const mAvg = {}, mMin = {}; Object.entries(byM).forEach(([m, a]) => { if (a.length >= 2) { mAvg[m] = wavg(a); mMin[m] = Math.min(...a.map(l => l.ppl)); } });
+  const cov = Math.max(30, day(fuel[0].date, fuel[fuel.length - 1].date));
+  const saving = fuel.reduce((t, l) => { const m = mMin[l.date.slice(0, 7)]; return m ? t + Math.max(0, l.litres * (l.ppl - m)) : t; }, 0), savingYr = saving / cov * 365;
+  // Station league: litre-weighted premium over that month's average price
+  const stg = {}; fuel.forEach(l => { const m = mAvg[l.date.slice(0, 7)]; if (m) (stg[l.station || 'Other'] = stg[l.station || 'Other'] || []).push(l); });
+  const st = Object.entries(stg).map(([k, a]) => ({ k, n: a.length, ppl: wavg(a), prem: a.reduce((t, l) => t + l.litres * (l.ppl - mAvg[l.date.slice(0, 7)]), 0) / a.reduce((t, l) => t + l.litres, 0) })).filter(x => x.n >= 2).sort((a, b) => a.prem - b.prem);
+  const best = st[0], maxP = Math.max(0.5, ...st.map(x => Math.abs(x.prem)));
+  const stHtml = st.map(x => `<div class="in-row"><span>${esc(x.k)}</span><div class="ov-bar"><i style="width:${Math.max(4, Math.abs(x.prem) / maxP * 100)}%;background:${x.prem <= 0 ? C.green : C.red}"></i></div><b style="color:${x.prem <= 0 ? C.green : C.red}">${x.prem <= 0 ? '−' : '+'}₹${Math.abs(x.prem).toFixed(1)}/L</b></div><div class="ov-sub" style="margin:-4px 0 4px">${x.n} fills · average ₹${x.ppl.toFixed(1)}/L</div>`).join('') || '<p class="in-p">Needs 2+ fills at a station in months with 2+ fills.</p>';
+  // Weekday: price versus that month's average, in percent
+  const wd = {}; fuel.forEach(l => { const m = mAvg[l.date.slice(0, 7)]; if (m) (wd[new Date(l.date + 'T00:00:00').getDay()] = wd[new Date(l.date + 'T00:00:00').getDay()] || []).push((l.ppl - m) / m * 100); });
+  const wdRows = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((nm, i) => { const a = wd[i]; if (!a || a.length < 2) return `<div class="in-row"><span>${nm}</span><span class="in-p" style="margin:0">not enough fills</span><b>–</b></div>`; const d = avg(a); return `<div class="in-row"><span>${nm} <small style="color:var(--text3)">(${a.length})</small></span><div class="ov-bar"><i style="width:${Math.min(100, Math.max(4, 50 + d * 8))}%;background:${d <= 0 ? C.green : C.red}"></i></div><b style="color:${d <= 0 ? C.green : C.red}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%</b></div>`; }).join('');
+  // Driving mode: distance between consecutive fills, grouped by the usage tag of the later fill
+  const byOdo = fuel.filter(l => typeof l.odo === 'number').sort((a, b) => a.odo - b.odo), md = {};
+  for (let i = 1; i < byOdo.length; i++) { const c = byOdo[i], km = c.odo - byOdo[i - 1].odo; if (km <= 0 || c.missedPrev || !c.usage) continue; const o = md[c.usage] = md[c.usage] || { km: 0, L: 0, A: 0, n: 0 }; o.km += km; o.L += c.litres; o.A += c.amt; o.n++; }
+  const modes = Object.entries(md).filter(([, o]) => o.n >= 2).map(([k, o]) => ({ k, n: o.n, kmpl: o.km / o.L, perKm: o.A / o.km })).sort((a, b) => a.kmpl - b.kmpl);
+  const uRows = modes.map(x => `<div class="in-row"><span>${esc(x.k)}</span><span class="in-p" style="margin:0">${x.kmpl.toFixed(1)} ${VU.eff} · ${x.n} fills</span><b>₹${x.perKm.toFixed(1)}/km</b></div>`).join('') || '<p class="in-p">Tag fills as City, Highway or Mixed (2+ each) to compare.</p>';
+  // Forecast: always from the vehicle's full history, not the on-screen time filter
+  const allV = appData.logs.filter(l => l.vehicle === veh).sort(byDate), fAll = allV.filter(l => l.type === 'fuel' && l.litres > 0).sort(byDate);
+  const now = new Date(), todayS = now.toLocaleDateString('en-CA'), cm = todayS.slice(0, 7), dim = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const span = Math.max(30, day(allV[0].date, allV[allV.length - 1].date)), perDayAll = allV.reduce((t, l) => t + l.amt, 0) / span;
+  const win = Math.min(90, span), perDayRecent = allV.filter(l => day(l.date, todayS) <= win).reduce((t, l) => t + l.amt, 0) / Math.max(30, win);
+  const mSpend = allV.filter(l => l.date.startsWith(cm)).reduce((t, l) => t + l.amt, 0), mEnd = mSpend + perDayRecent * (dim - now.getDate());
+  const bud = Number(getVehicleMeta(veh).monthlyBudget) || 0;
+  const gaps = fAll.slice(1).map((l, i) => day(fAll[i].date, l.date)).filter(g => g > 0).slice(-8), gap = gaps.length ? med(gaps) : null;
+  const lastF = fAll[fAll.length - 1], nextD = gap && lastF ? new Date(new Date(lastF.date + 'T00:00:00').getTime() + gap * 864e5) : null, overdue = nextD && nextD < new Date(todayS + 'T00:00:00');
+  const nextTxt = nextD ? (overdue ? 'due now' : nextD.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) : '–';
+  // What-if baseline: distance per year and true average efficiency (distance ÷ litres burned between first and last fill)
+  const fo = fAll.filter(l => typeof l.odo === 'number').sort((a, b) => a.odo - b.odo);
+  let km = 0, curE = 0, curP = fAll.length ? wavg(fAll) : 0;
+  if (fo.length > 1) { const dist = fo[fo.length - 1].odo - fo[0].odo, L = fo.slice(1).reduce((t, l) => t + l.litres, 0), d = Math.max(30, day(fo[0].date, fo[fo.length - 1].date)); km = dist / d * 365; curE = L > 0 ? dist / L : 0; }
+  curE = +curE.toFixed(1); curP = +curP.toFixed(1); window._wi = { km, e: curE, p: curP, price: VU.price };
+  window._ins = { saving, savingYr, best, ranked: st.slice(0, 2), nextD, overdue, gap, mEnd, bud, modes: modes.map(x => ({ k: x.k, kmpl: x.kmpl })) };
+  const eMin = Math.max(1, Math.floor(curE * .6)), eMax = Math.max(eMin + 1, Math.ceil(curE * 1.6));
+  const saveHtml = `<div class="in-win">${savingYr > 200 ? `About <strong>${inr(savingYr)} a year</strong> could be saved by always filling at the cheapest price you found that month.` : 'Your fill prices are close to the cheapest you found each month.'}${best ? ` Your cheapest station on average is <strong>${esc(best.k)}</strong> (₹${Math.abs(best.prem).toFixed(1)}/L ${best.prem <= 0 ? 'below' : 'above'} the monthly average).` : ''}</div>` +
+    `<div class="in-grid"><div class="ov-card"><p class="in-h">Station league</p><p class="in-p">Average price versus that month's average, so price rises over time do not skew it. 2+ fills per station.</p>${stHtml}</div>` +
+    `<div class="ov-card"><p class="in-h">Cheapest weekday to fill</p><p class="in-p">Price versus that month's average. Fills in brackets.</p>${wdRows}</div></div>`;
+  let mileHtml = `<div class="ov-card"><p class="in-h">City vs highway</p><p class="in-p">Real efficiency and fuel cost per km for each driving mode (distance between fills).</p>${uRows}</div>`;
+  const stayHtml = `<div class="ov-card"><p class="in-h">Forecast</p><p class="in-p">Based on your own pace.</p><div class="in-row"><span>Month end</span><span class="in-p" style="margin:0">${bud ? 'budget ' + inr(bud) : 'no budget set'} · last ${Math.round(win)} days pace</span><b style="color:${bud && mEnd > bud ? C.red : 'var(--text)'}">${inr(mEnd)}</b></div><div class="in-row"><span>Next ${VU.fill}</span><span class="in-p" style="margin:0">usually every ~${gap ? Math.round(gap) : '–'} days</span><b>${nextTxt}</b></div><div class="in-row"><span>Yearly run-rate</span><span class="in-p" style="margin:0">all costs, full history</span><b>${inr(perDayAll * 365)}</b></div></div>`;
+  mileHtml += curE > 0 && km > 0 ? `<div class="ov-card in-wi"><p class="in-h">What-if simulator</p><p class="in-p">Move the sliders to see your yearly fuel bill at about ${Math.round(km).toLocaleString('en-IN')} km a year.</p><div class="in-grid"><div><label><span>Efficiency (${VU.eff})</span><b id="wiEv">${curE.toFixed(1)}</b></label><input type="range" id="wiE" min="${eMin}" max="${eMax}" step="0.1" value="${curE}" oninput="wiUpdate()"><label><span>Price (${VU.price})</span><b id="wiPv">${curP.toFixed(1)}</b></label><input type="range" id="wiP" min="${Math.floor(curP * .8)}" max="${Math.ceil(curP * 1.4)}" step="0.5" value="${curP}" oninput="wiUpdate()"></div><div><p class="in-p" style="margin-top:12px">Yearly fuel cost</p><p class="in-big" id="wiCost">–</p><p class="in-sub ov-sub" id="wiDelta"></p></div></div></div>` : '';
+  put('inSave', saveHtml); put('inStay', stayHtml); put('inMile', mileHtml);
+  if (document.getElementById('wiE')) wiUpdate();
+}
+function wiUpdate() {
+  const w = window._wi; if (!w) return; const e = +document.getElementById('wiE').value, p = +document.getElementById('wiP').value;
+  const cost = w.km / e * p, base = w.km / w.e * w.p, d = cost - base, inr = v => '₹' + Math.round(Math.abs(v)).toLocaleString('en-IN');
+  document.getElementById('wiEv').textContent = e.toFixed(1); document.getElementById('wiPv').textContent = p.toFixed(1); document.getElementById('wiCost').textContent = inr(cost);
+  const el = document.getElementById('wiDelta'); el.textContent = Math.abs(d) < 1 ? 'Same as today' : (d < 0 ? inr(d) + ' a year cheaper than today' : inr(d) + ' a year more than today'); el.style.color = d < 0 ? 'var(--green)' : d > 0 ? 'var(--red)' : '';
+}
+
+
+function renderHome(logs, avgKmpl, kmplData) {
+  const g = document.getElementById('homeGrid'), b = document.getElementById('homeBanner'); if (!g) return;
+  const veh = appData.settings.activeVehicle, VU = vUnits(veh), t = Number(getEffTarget()) || 0, I = window._ins || {};
+  const inr = v => '₹' + Math.round(v).toLocaleString('en-IN'), num = x => parseFloat(String(x).replace(/[^0-9.]/g, '')) || 0;
+  const el = id => document.getElementById(id), alerts = (typeof computeAlerts === 'function' ? computeAlerts(veh) : []).slice(0, 3);
+  const esc = x => String(x).replace(/<[^>]*>/g, '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const go = k => `<button class="hc-link" onclick="showTab('${k}')">`;
+  // banner
+  const moves = [];
+  if (alerts[0]) moves.push(esc(alerts[0].text) + (alerts[0].sub ? ' (' + esc(alerts[0].sub) + ')' : ''));
+  if (I.best) moves.push(`Fill up at ${esc(I.best.k)}, your cheapest station on average`);
+  if (I.nextD) moves.push(I.overdue ? 'your next fill is due now' : `your next fill is due around ${I.nextD.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })}`);
+  const hr = new Date().getHours(), greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  const R = 70, circ = 2 * Math.PI * R, pe = t && avgKmpl ? Math.min(1, avgKmpl / t) : (avgKmpl ? 1 : 0);
+  const totSpend = logs.reduce((a, l) => a + l.amt, 0), fl = logs.filter(l => l.type === 'fuel').sort((a, b) => a.date.localeCompare(b.date)), lastF = fl[fl.length - 1];
+  const dsf = lastF ? Math.max(0, Math.round((Date.now() - new Date(lastF.date)) / 864e5)) : null;
+  const odoAll = logs.map(l => l.odo).filter(x => typeof x === 'number'), distAll = odoAll.length > 1 ? Math.max(...odoAll) - Math.min(...odoAll) : 0;
+  const moveTxt = moves.length ? moves.map(m => m.replace(/^./, c => c.toUpperCase())).join('. ') + '.' : 'Log a few more fill-ups and FuelIQ will start coaching you.';
+  const cmS = new Date().toLocaleDateString('en-CA').slice(0, 7), mAll = appData.logs.filter(l => l.vehicle === veh && l.date.startsWith(cmS));
+  const mSp = mAll.reduce((a, l) => a + l.amt, 0), mFills = mAll.filter(l => l.type === 'fuel').length, mOd = mAll.map(l => l.odo).filter(x => typeof x === 'number');
+  const prevOd = appData.logs.filter(l => l.vehicle === veh && l.date < cmS + '-01' && typeof l.odo === 'number').map(l => l.odo);
+  const mKm = mOd.length ? Math.max(...mOd) - (prevOd.length ? Math.max(...prevOd) : Math.min(...mOd)) : 0;
+  const bud = Number(getVehicleMeta(veh).monthlyBudget) || 0, bp = bud ? Math.min(100, mSp / bud * 100) : 0;
+  b.innerHTML = `<div class="hh"><div><p class="hh-hi">${greet} · ${esc(veh)}</p><p class="hh-t">${avgKmpl && t ? (avgKmpl >= t ? 'You are beating your mileage target.' : 'Your mileage is ' + Math.round(pe * 100) + '% of target.') : 'Here is how your vehicle is doing.'}</p><div class="hh-move"><span>⚡</span><span>${moveTxt}</span></div><div class="hh-chips"><span class="hh-chip">Total spent<b>${inr(totSpend)}</b></span><span class="hh-chip">Distance<b>${Math.round(distAll).toLocaleString('en-IN')} km</b></span><span class="hh-chip">Last ${VU.fill}<b>${dsf == null ? '–' : dsf + (dsf === 1 ? ' day ago' : ' days ago')}</b></span></div></div>` +
+    `<div class="hh-ring"><svg width="170" height="170" viewBox="0 0 170 170"><circle cx="85" cy="85" r="${R}" fill="none" stroke="var(--bg3)" stroke-width="14"/><circle cx="85" cy="85" r="${R}" fill="none" stroke="${pe >= 1 && t ? C.green : C.amber}" stroke-width="14" stroke-linecap="round" stroke-dasharray="${(circ * pe).toFixed(1)} ${circ.toFixed(1)}"/></svg><div class="c"><span class="n">${avgKmpl ? avgKmpl.toFixed(1) : '–'}</span><span class="u">${VU.eff}</span><span class="l">${t ? 'target ' + t : 'no target set'}</span></div></div></div>` +
+    `<div class="hh-acts"><button class="hh-act p" onclick="document.getElementById('formPanel').scrollIntoView({behavior:'smooth'})">➕ Log ${VU.fill === 'charge' ? 'charge' : 'fill-up or expense'}</button><button class="hh-act" onclick="openReminderModal()">🔔 Reminders</button><button class="hh-act" onclick="showTab('save')">💰 Saving tips</button></div>` +
+    `<div class="hh-glance"><div class="hh-g"><span class="ic" style="background:rgba(245,158,11,.18)">💸</span><div style="flex:1;min-width:0"><p class="v">${inr(mSp)}</p><p class="k">${bud ? 'spent this month · ' + Math.round(bp) + '% of budget' : 'spent this month'}</p>${bud ? `<div class="pb"><i style="width:${bp}%;background:${bp >= 100 ? C.red : bp >= 80 ? C.amber : C.green}"></i></div>` : ''}</div></div><div class="hh-g"><span class="ic" style="background:rgba(59,130,246,.18)">🛣️</span><div><p class="v">${Math.max(0, Math.round(mKm)).toLocaleString('en-IN')} km</p><p class="k">driven this month</p></div></div><div class="hh-g"><span class="ic" style="background:rgba(16,185,129,.18)">⛽</span><div><p class="v">${mFills}</p><p class="k">${mFills === 1 ? VU.fill : VU.fills} this month</p></div></div></div>`;
+  // 1 save
+  const sav = I.savingYr > 200 && I.cheapest ? `Save about ${inr(I.savingYr)} a year` : (I.cheapest ? 'Your prices are consistent' : 'Needs a few more fills');
+  const c1 = `<div class="ov-card goal goal-save"><div class="hc-h"><span class="hc-ic">💰</span><p class="hc-k">SPEND LESS ON FUEL</p></div><p class="hc-v">${sav}</p>${(I.ranked || []).map((x, i) => `<div class="hc-li"><span>${esc(x.k)}</span><span style="color:${i === 0 ? C.green : 'inherit'}">₹${Math.abs(x.prem).toFixed(1)}/L ${x.prem <= 0 ? 'below' : 'above'} average</span></div>`).join('')}${go('save')}See station ranking</button></div>`;
+  // 2 own
+  const tco = num(el('kTcoKm') && el('kTcoKm').textContent), fuelAmt = logs.filter(l => l.type === 'fuel').reduce((a, l) => a + l.amt, 0), cat = {};
+  logs.filter(l => l.type !== 'fuel').forEach(l => { const k = l.category || 'Other'; cat[k] = (cat[k] || 0) + l.amt; });
+  const tot = fuelAmt + Object.values(cat).reduce((a, x) => a + x, 0), cols = [C.amber, C.purple, C.green, C.blue, C.red], segs = [['Fuel', fuelAmt], ...Object.entries(cat).sort((a, b) => b[1] - a[1]).slice(0, 3)];
+  const c2 = `<div class="ov-card goal goal-own"><div class="hc-h"><span class="hc-ic">🧾</span><p class="hc-k">REAL COST OF OWNING</p></div><p class="hc-v">${tco ? '₹' + tco.toFixed(1) + ' per km, all in' : 'Needs odometer data'}</p><div class="ov-bar" style="margin:10px 0 6px">${segs.map((s_, i) => `<i style="width:${tot ? s_[1] / tot * 100 : 0}%;background:${cols[i]}"></i>`).join('')}</div><p class="ov-sub" style="margin:0">${segs.map(s_ => esc(s_[0]) + ' ' + Math.round(tot ? s_[1] / tot * 100 : 0) + '%').join(' · ')}</p><p class="ov-sub">${inr(tot)} spent so far</p>${go('own')}See cost breakdown</button></div>`;
+  // 3 stay
+  const c3 = `<div class="ov-card goal goal-stay"><div class="hc-h"><span class="hc-ic">🔔</span><p class="hc-k">STAY ON TRACK</p></div><p class="hc-v">${alerts.length ? alerts.length + ' thing' + (alerts.length > 1 ? 's' : '') + ' need you' : 'All clear'}</p>${alerts.map(a => `<div class="hc-li"><span>${esc(a.text)}</span><span>${esc(a.sub || '')}</span></div>`).join('')}${I.nextD ? `<div class="hc-li"><span>Next fill</span><span>${I.overdue ? 'due now' : 'about ' + I.nextD.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</span></div>` : ''}${go('stay')}See reminders and forecast</button></div>`;
+  // 4 mileage
+  const ks = logs.filter(l => l.type === 'fuel').sort((a, b) => a.date.localeCompare(b.date)).map(l => (kmplData || {})[l.id]).filter(Boolean).slice(-12), mn = Math.min(...ks, t || Infinity), mx = Math.max(...ks, t || 0), r = (mx - mn) || 1, y = v => 34 - (v - mn) / r * 30;
+  const spk = ks.length > 1 ? `<svg viewBox="0 0 200 38" width="100%" height="38" preserveAspectRatio="none"><polyline points="${ks.map((v, i) => (i / (ks.length - 1) * 200).toFixed(1) + ',' + y(v).toFixed(1)).join(' ')}" fill="none" stroke="${C.amber}" stroke-width="2" vector-effect="non-scaling-stroke"/>${t ? `<line x1="0" x2="200" y1="${y(t)}" y2="${y(t)}" stroke="${C.red}" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>` : ''}</svg>` : '';
+  const md = I.modes || [], drag = md.length > 1 ? `Biggest drag: ${esc(md[0].k)} at ${md[0].kmpl.toFixed(1)} ${VU.eff} versus ${md[md.length - 1].kmpl.toFixed(1)} on ${esc(md[md.length - 1].k)}` : '';
+  const c4 = `<div class="ov-card goal goal-mile"><div class="hc-h"><span class="hc-ic">📈</span><p class="hc-k">IMPROVE MILEAGE</p></div><p class="hc-v">${avgKmpl ? avgKmpl.toFixed(1) + ' ' + VU.eff : '–'}${t && avgKmpl ? ', ' + Math.abs(avgKmpl - t).toFixed(1) + (avgKmpl < t ? ' under' : ' over') + ' target' : ''}</p>${spk}<p class="ov-sub">${drag}</p>${go('mileage')}See what affects mileage</button></div>`;
+  g.innerHTML = c1 + c2 + c3 + c4;
+}
+
+function renderOverview(logs, avgKmpl) {
+  const o = document.getElementById('ovw'); if (!o) return;
+  const VU = vUnits(appData.settings.activeVehicle), t = Number(getEffTarget()) || 0, el = id => document.getElementById(id);
+  const num = x => parseFloat(String(x).replace(/[^0-9.]/g, '')) || 0, txt = id => el(id) ? el(id).textContent.trim() : '—';
+  const inr = v => '₹' + Math.round(v).toLocaleString('en-IN');
+  const veh = appData.settings.activeVehicle, bud = Number(getVehicleMeta(veh).monthlyBudget) || 0;
+  const cm = new Date().toLocaleDateString('en-CA').slice(0, 7);
+  const mSpend = appData.logs.filter(l => l.vehicle === veh && l.date.startsWith(cm)).reduce((a, l) => a + l.amt, 0);
+  const tco = num(txt('kTcoKm')), fk = Math.min(num(txt('kCostKm')), tco), ek = Math.max(0, tco - fk);
+  const pe = t && avgKmpl ? Math.min(100, avgKmpl / t * 100) : 0, pb = bud ? mSpend / bud * 100 : 0;
+  const bc = pb >= 100 ? C.red : pb >= 80 ? C.amber : C.green;
+  el('ovwHero').innerHTML =
+    `<div class="ov-card"><p class="ov-lbl">EFFICIENCY</p><p class="ov-big">${avgKmpl ? avgKmpl.toFixed(1) : '—'}<small>${VU.eff}</small></p><div class="ov-bar"><i style="width:${pe}%;background:${C.amber}"></i></div><p class="ov-sub">${t ? Math.round(pe) + '% of ' + t + ' target' : 'No target set'}</p></div>` +
+    `<div class="ov-card"><p class="ov-lbl">TRUE COST PER KM</p><p class="ov-big">${tco ? '₹' + tco.toFixed(1) : '—'}</p><div class="ov-bar"><i style="width:${tco ? fk / tco * 100 : 0}%;background:${C.amber}"></i><i style="width:${tco ? ek / tco * 100 : 0}%;background:${C.purple}"></i></div><p class="ov-sub">Fuel ₹${fk.toFixed(1)} + other ₹${ek.toFixed(1)}</p></div>` +
+    `<div class="ov-card"><p class="ov-lbl">SPEND THIS MONTH</p><p class="ov-big">${inr(mSpend)}</p>${bud ? `<div class="ov-bar"><i style="width:${Math.min(100, pb)}%;background:${bc}"></i></div><p class="ov-sub">${Math.round(pb)}% of ${inr(bud)} budget</p>` : `<p class="ov-sub">No budget set. <a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber)">Set budget</a></p>`}</div>`;
+  const ms = {}; logs.forEach(l => { const m = l.date.slice(0, 7); ms[m] = (ms[m] || 0) + l.amt; });
+  const ks = Object.keys(ms).sort().slice(-8), mx = Math.max(1, bud, ...ks.map(k => ms[k])) * 1.1, n = Math.max(ks.length, 1), w = 380 / n;
+  const bars = ks.map((k, i) => { const h = ms[k] / mx * 130; return `<rect x="${10 + i * w + w * .18}" y="${150 - h}" width="${w * .64}" height="${h}" rx="3" fill="${C.amber}"><title>${k}: ${inr(ms[k])}</title></rect><text x="${10 + i * w + w / 2}" y="166" font-size="11" text-anchor="middle" fill="${getCssVar('--text3')}">${new Date(k + '-01').toLocaleString('en', { month: 'short' })}</text>`; }).join('');
+  const bl = bud ? `<line x1="10" x2="390" y1="${150 - bud / mx * 130}" y2="${150 - bud / mx * 130}" stroke="${C.red}" stroke-width="1.5" stroke-dasharray="5 4"/>` : '';
+  el('ovwChart').innerHTML = `<svg viewBox="0 0 400 172" width="100%" role="img" aria-label="Monthly spend">${bl}${bars}</svg>`;
+  el('ovwChartNote').textContent = bud ? 'Dashed line = monthly budget' : 'Set a budget to see a target line';
+  const dsf = num(txt('kDaysSinceFill')), rng = num(txt('kRangeRemaining'));
+  el('ovwLines').innerHTML = `<div class="ov-line"><div>Last fill ${dsf} day${dsf === 1 ? '' : 's'} ago<span>${txt('kLastFillSub')}</span></div></div><div class="ov-line"><div>Range left about ${Math.round(rng).toLocaleString('en-IN')} km<span>${txt('kRangeSub')}</span></div></div>`;
+  const tiles = [['Distance','kTotalKm','kKmSub','kTotalKm'],['Fuel spend','kFuelSpend','kFillsSub','kFuelSpend'],['Other expenses','kOtherSpend','kExpenseSub','kOtherSpend'],['Avg price','kAvgPrice','','kAvgPrice'],['Total (TCO)','kTotalSpend','','kTotalSpend'],['Monthly avg','kAvgMonthlySpend','kAvgMonthlyDistSub','kAvgMonthlySpend']];
+  el('ovwStats').innerHTML = tiles.map(([l, v, sub, sp]) => { const card = el(sp) && el(sp).closest('.kpi-card'), sk = card && card.querySelector('.spark'); return `<div class="ov-stat"><div class="l">${l}</div><div class="v">${el(v) ? el(v).innerHTML : '—'}</div><div class="s">${sub ? txt(sub) : ''}</div>${sk ? '<div class="spark">' + sk.innerHTML + '</div>' : ''}</div>`; }).join('');
+}
+
 function renderCharts(logs, kmplData, outliers) {
   if (!chartsAvailable()) return;
   outliers = outliers || new Set();
   const VU = vUnits();
   Chart.defaults.color = getCssVar('--text2');
   Chart.defaults.font.family = "'Chakra Petch', monospace";
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.legend.labels.boxHeight = 8;
   const gridColor = getCssVar('--border');
 
   const axOpts = { grid: { color: gridColor }, border: { display: false } };
   const tooltipOpts = { backgroundColor: 'rgba(0,0,0,0.8)', titleFont: {family: 'Chakra Petch', size: 14}, bodyFont: {family: 'Chakra Petch', size: 13}, padding: 12, cornerRadius: 8 };
+
+  const ma = (arr, n = 3) => arr.map((_, i) => { if (i < n - 1) return null; const w = arr.slice(i - n + 1, i + 1); return w.some(v => v == null) ? null : +(w.reduce((a, b) => a + b, 0) / n).toFixed(2); });
+  const yT = t => ({ title: { display: true, text: t, color: getCssVar('--text3') } });
+  const inr = v => '₹' + Math.round(v).toLocaleString('en-IN');
+  const kmF = v => Math.round(v).toLocaleString('en-IN') + ' km';
+  const evs = logs.filter(l => l.type !== 'fuel' && ['Service','Repair'].includes(l.category)).map(l => ({ date: l.date, icon: '🔧' }));
+  logs.filter(l => l.type !== 'fuel').sort((a,b) => b.amt - a.amt).slice(0,3).forEach(l => { if (!evs.some(e => e.date === l.date)) evs.push({ date: l.date, icon: '💸' }); });
+  const evMonthPos = keys => evs.map(e => ({ i: keys.indexOf(e.date.slice(0,7)), icon: e.icon })).filter(p => p.i >= 0);
+  const evDatePos = dates => evs.map(e => ({ i: dates.findIndex(d => d >= e.date), icon: e.icon })).filter(p => p.i >= 0);
+  const evPlugin = pos => ({ id: 'evMarks', afterDatasetsDraw(ch) { const x = ch.scales.x, a = ch.chartArea, c = ch.ctx; let last = -99; const seen = new Set();
+    pos.slice().sort((p, q) => p.i - q.i).forEach(p => { if (seen.has(p.i)) return; seen.add(p.i); const px = x.getPixelForValue(p.i); const icon = Math.abs(px - last) >= 18; c.save(); c.strokeStyle = C.red; c.globalAlpha = .35; c.lineWidth = 1; c.setLineDash([3,3]); c.beginPath(); c.moveTo(px, a.top + (icon ? 16 : 0)); c.lineTo(px, a.bottom); c.stroke(); c.setLineDash([]); c.globalAlpha = 1; if (icon) { c.font = '12px sans-serif'; c.textAlign = 'center'; c.fillText(p.icon, px, a.top + 12); last = px; } c.restore(); }); } });
+  const hBar = (key, id, map, colorFn, fmt) => {
+    const ks = Object.keys(map).sort((a,b) => map[b] - map[a]); const tot = ks.reduce((t,k) => t + map[k], 0);
+    if (charts[key]) charts[key].destroy();
+    charts[key] = new Chart(document.getElementById(id), { type: 'bar',
+      data: { labels: ks.map(k => `${k} (${tot ? Math.round(map[k]/tot*100) : 0}%)`), datasets: [{ data: ks.map(k => map[k]), backgroundColor: ks.map(colorFn), borderRadius: 6, barPercentage: 0.75 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { ...axOpts, ticks: { callback: v => fmt(v) } }, y: { ...axOpts, grid: { display: false } } }, plugins: { legend: { display: false }, tooltip: { ...tooltipOpts, callbacks: { label: c => ' ' + fmt(c.parsed.x) } } } } });
+  };
+  const bud = Number(getVehicleMeta(appData.settings.activeVehicle).monthlyBudget) || 0;
 
   const monthSpend = {};
   logs.forEach(l => {
@@ -2516,10 +2873,11 @@ function renderCharts(logs, kmplData, outliers) {
       labels: msKeys,
       datasets: [
         { label: (VU.ev ? 'Charging' : 'Fuel') + ' (₹)', data: msKeys.map(k=>monthSpend[k].fuel), backgroundColor: C.amber, borderRadius: 6, barPercentage: 0.6 },
-        { label: 'Other (₹)', data: msKeys.map(k=>monthSpend[k].other), backgroundColor: C.purple, borderRadius: 6, barPercentage: 0.6 }
+        { label: 'Other (₹)', data: msKeys.map(k=>monthSpend[k].other), backgroundColor: C.purple, borderRadius: 6, barPercentage: 0.6 },
+        ...(bud ? [{ type: 'line', label: 'Budget (' + inr(bud) + ')', data: msKeys.map(() => bud), borderColor: C.red, borderDash: [6,4], borderWidth: 2, pointRadius: 0, fill: false }] : [])
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ...axOpts }, y: { stacked: true, ...axOpts } }, plugins: { legend: { position: 'top'}, tooltip: tooltipOpts } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ...axOpts }, y: { stacked: true, ...axOpts, ...yT('₹ per month'), ticks: { callback: inr } } }, plugins: { legend: { position: 'top'}, tooltip: tooltipOpts } }
   });
 
   const fuelLogs = logs.filter(l=>l.type==='fuel');
@@ -2528,9 +2886,9 @@ function renderCharts(logs, kmplData, outliers) {
     type: 'line',
     data: {
       labels: fuelLogs.map(l=>l.date.slice(5)),
-      datasets: [{ label: VU.price, data: fuelLogs.map(l=>l.ppl), borderColor: C.blue, tension: 0.4, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: C.blue, borderWidth: 3 }]
+      datasets: [{ label: VU.price, data: fuelLogs.map(l=>l.ppl), borderColor: C.blue, tension: 0.4, pointRadius: 5, pointHoverRadius: 8, pointBackgroundColor: C.blue, borderWidth: 3 }, { label: '3-fill avg', data: ma(fuelLogs.map(l => l.ppl)), borderColor: C.green, borderDash: [6,4], borderWidth: 2, pointRadius: 0, tension: 0.4 }]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts }, plugins: { legend: {display:false}, tooltip: tooltipOpts } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: { ...axOpts, ...yT(VU.price) } }, plugins: { legend: {display:true, position:'top'}, tooltip: tooltipOpts } }
   });
 
   const sortedFuel = [...fuelLogs].sort((a,b)=>a.odo-b.odo);
@@ -2576,7 +2934,7 @@ function renderCharts(logs, kmplData, outliers) {
         { label: 'Mixed', data: mrKeys.map(k=>monthRun[k].Mixed), backgroundColor: C.purple, borderRadius: 4 }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ...axOpts }, y: { stacked: true, ...axOpts } }, plugins: { legend: { position: 'top'}, tooltip: tooltipOpts } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true, ...axOpts }, y: { stacked: true, ...axOpts, ...yT('km per month'), ticks: { callback: kmF } } }, plugins: { legend: { position: 'top'}, tooltip: tooltipOpts } }
   });
 
   const stationMap = {}; fuelLogs.forEach(l => stationMap[l.station||'Other'] = (stationMap[l.station||'Other']||0) + l.amt);
@@ -2588,44 +2946,8 @@ function renderCharts(logs, kmplData, outliers) {
     return `${label} (${percent}%)`;
   });
 
-  if(charts.usage) charts.usage.destroy();
-  charts.usage = new Chart(document.getElementById('usageChart'), { 
-    type: 'pie', 
-    data: { 
-      labels: uLabels, 
-      datasets: [{ data: uData, backgroundColor: [C.green, C.blue, C.purple], borderWidth: 0, hoverOffset: 10 }] 
-    }, 
-    options: { 
-      responsive: true, maintainAspectRatio: false, 
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { family: "'Chakra Petch', monospace" } } },
-        tooltip: { ...tooltipOpts, callbacks: { label: ctx => ` ${ctx.parsed.toLocaleString('en-IN')} km` } }
-      } 
-    } 
-  });
-  
-  const sLabelsRaw = Object.keys(stationMap);
-  const totalS = sLabelsRaw.reduce((a,k) => a+stationMap[k], 0);
-  const sLabels = sLabelsRaw.map(label => {
-    const percent = totalS > 0 ? Math.round((stationMap[label] / totalS) * 100) : 0;
-    return `${label} (${percent}%)`;
-  });
-
-  if(charts.station) charts.station.destroy();
-  charts.station = new Chart(document.getElementById('stationChart'), { 
-    type: 'doughnut', 
-    data: { 
-      labels: sLabels, 
-      datasets: [{ data: sLabelsRaw.map(k=>stationMap[k]), backgroundColor: sLabelsRaw.map(k=>C.st[k]||C.st['Other']), borderWidth: 0, hoverOffset: 10 }] 
-    }, 
-    options: { 
-      responsive: true, maintainAspectRatio: false, cutout: '70%', 
-      plugins:{
-        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { family: "'Chakra Petch', monospace" } } },
-        tooltip: { ...tooltipOpts, callbacks: { label: ctx => ` ₹${ctx.parsed.toLocaleString('en-IN')}` } }
-      } 
-    } 
-  });
+  hBar('usage', 'usageChart', { City: uData[0], Highway: uData[1], Mixed: uData[2] }, k => ({ City: C.green, Highway: C.blue, Mixed: C.purple })[k], kmF);
+  hBar('station', 'stationChart', stationMap, k => C.st[k] || C.st['Other'], inr);
 
   const kLabels = [], kData = [], kIds = [];
   sortedFuel.forEach(l => { if(kmplData[l.id]) { kLabels.push(l.date.slice(5)); kData.push(kmplData[l.id]); kIds.push(l.id); } });
@@ -2635,8 +2957,9 @@ function renderCharts(logs, kmplData, outliers) {
 
   const kmplDatasets = [{
     label: VU.eff, data: kData, borderColor: C.amber, backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4,
-    pointRadius: kPointRadii, pointHoverRadius: kPointRadii.map(r=>r+3), pointBackgroundColor: kPointColors, borderWidth: 3
+    pointRadius: kPointRadii, pointHoverRadius: kPointRadii.map(r=>r+3), pointBackgroundColor: kIds.map(id => outliers.has(id) ? 'transparent' : C.amber), pointBorderColor: kPointColors, pointBorderWidth: 3, borderWidth: 3
   }];
+  kmplDatasets.push({ label: '3-fill avg', data: ma(kData), borderColor: C.blue, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4, spanGaps: true });
   if (target) {
     kmplDatasets.push({
       label: `Target (${target})`, data: kLabels.map(()=>target), borderColor: C.green, borderDash: [6,4],
@@ -2648,12 +2971,13 @@ function renderCharts(logs, kmplData, outliers) {
   charts.kmpl = new Chart(document.getElementById('kmplChart'), {
     type: 'line',
     data: { labels: kLabels, datasets: kmplDatasets },
+    plugins: [evPlugin(evDatePos(sortedFuel.filter(l => kmplData[l.id]).map(l => l.date)))],
     options: {
-      responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts },
+      responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: { ...axOpts, ...yT(VU.eff) } },
       plugins: {
-        legend: { display: !!target, position: 'top' },
+        legend: { display: true, position: 'top' },
         tooltip: { ...tooltipOpts, callbacks: { label: ctx => {
-          if (ctx.datasetIndex !== 0) return ` ${ctx.dataset.label}`;
+          if (ctx.datasetIndex !== 0) return ctx.parsed.y != null ? ` ${ctx.dataset.label}: ${(+ctx.parsed.y).toFixed(2)} ${VU.eff}` : null;
           const flagged = outliers.has(kIds[ctx.dataIndex]);
           return ` ${ctx.parsed.y.toFixed(2)} ${VU.eff}${flagged ? ' ⚠️ unusual vs. your data' : ''}`;
         } } }
@@ -2675,21 +2999,7 @@ function renderCharts(logs, kmplData, outliers) {
     return `${k} (${percent}%)`;
   });
 
-  if(charts.expenseCat) charts.expenseCat.destroy();
-  charts.expenseCat = new Chart(document.getElementById('expenseCatChart'), {
-    type: 'doughnut',
-    data: {
-      labels: catLabels,
-      datasets: [{ data: catKeysRaw.map(k=>catMap[k]), backgroundColor: catKeysRaw.map(k=>catColors[k]||C.text3), borderWidth: 0, hoverOffset: 10 }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, cutout: '70%',
-      plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { family: "'Chakra Petch', monospace" } } },
-        tooltip: { ...tooltipOpts, callbacks: { label: ctx => ` ₹${ctx.parsed.toLocaleString('en-IN')}` } }
-      }
-    }
-  });
+  hBar('expenseCat', 'expenseCatChart', catMap, k => catColors[k] || C.text3, inr);
 
   // Cost / KM Trend — monthly Fuel-only vs True (TCO) cost per km,
   // using the same day-distributed monthly distance as the Monthly Run chart
@@ -2712,7 +3022,8 @@ function renderCharts(logs, kmplData, outliers) {
         { label: 'TCO ₹/km', data: trendTcoKm, borderColor: C.amber, backgroundColor: 'rgba(245,158,11,0.1)', tension: 0.4, pointRadius: 4, pointHoverRadius: 7, pointBackgroundColor: C.amber, borderWidth: 3, spanGaps: true }
       ]
     },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts }, plugins: { legend: { position: 'top' }, tooltip: tooltipOpts } }
+    options: { responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: { ...axOpts, ...yT('₹ per km') } }, plugins: { legend: { position: 'top' }, tooltip: tooltipOpts } },
+    plugins: [evPlugin(evMonthPos(trendKeys))]
   });
 
   // Odometer Progress — raw odometer reading at each fuel fill, over time
@@ -2764,7 +3075,7 @@ function renderCharts(logs, kmplData, outliers) {
   if(charts.effPrice) charts.effPrice.destroy();
   charts.effPrice = new Chart(document.getElementById('effPriceChart'), {
     type: 'scatter',
-    data: { datasets: [{ label: `${VU.eff} vs ${VU.price}`, data: effPricePoints, backgroundColor: C.blue, pointRadius: 6, pointHoverRadius: 9 }] },
+    data: { datasets: [{ label: `${VU.eff} vs ${VU.price}`, data: effPricePoints, backgroundColor: C.blue, pointBackgroundColor: sortedFuel.filter(l => kmplData[l.id]).map(l => outliers.has(l.id) ? 'transparent' : C.blue), pointBorderColor: sortedFuel.filter(l => kmplData[l.id]).map(l => outliers.has(l.id) ? C.red : C.blue), pointBorderWidth: 2, pointRadius: 6, pointHoverRadius: 9 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
       scales: {
@@ -2774,6 +3085,41 @@ function renderCharts(logs, kmplData, outliers) {
       plugins: { legend: { display: false }, tooltip: { ...tooltipOpts, callbacks: { label: ctx => `₹${ctx.parsed.x}/${VU.energy} → ${ctx.parsed.y.toFixed(1)} ${VU.eff}` } } }
     }
   });
+
+  // KPI sparklines (last 6 months)
+  const spark = (id, arr, color) => {
+    const el = document.getElementById(id), card = el && el.closest('.kpi-card'); if (!card) return;
+    const old = card.querySelector('.spark'); if (old) old.remove();
+    const v = arr.filter(x => x != null && isFinite(x)).slice(-6); if (v.length < 2) return;
+    const mn = Math.min(...v), r = (Math.max(...v) - mn) || 1;
+    const pts = v.map((x,i) => (i/(v.length-1)*100).toFixed(1) + ',' + (26 - ((x-mn)/r)*22).toFixed(1)).join(' ');
+    const d = document.createElement('div'); d.className = 'spark'; d.title = 'Last 6 months';
+    d.innerHTML = '<svg viewBox="0 0 100 30" preserveAspectRatio="none" width="100%" height="28"><polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+    card.appendChild(d);
+  };
+  const totM = msKeys.map(k => monthSpend[k].fuel + monthSpend[k].other);
+  spark('kFuelSpend', msKeys.map(k => monthSpend[k].fuel), C.amber);
+  spark('kOtherSpend', msKeys.map(k => monthSpend[k].other), C.red);
+  spark('kTotalSpend', totM, C.green);
+  spark('kAvgMonthlySpend', totM, C.purple);
+  spark('kTotalKm', mrKeys.map(k => monthRun[k].City + monthRun[k].Highway + monthRun[k].Mixed), C.purple);
+  spark('kCostKm', trendFuelKm, C.blue);
+  spark('kTcoKm', trendTcoKm, C.green);
+  spark('kAvgKmpl', kData, C.amber);
+
+  // Activity heatmap
+  const hm = document.getElementById('calHeatGrid');
+  if (hm) {
+    const day = {}; logs.forEach(l => { const o = day[l.date] || (day[l.date] = { amt: 0, fuel: false }); o.amt += l.amt; if (l.type === 'fuel') o.fuel = true; });
+    const end = new Date(); end.setHours(0,0,0,0); end.setDate(end.getDate() + (6 - end.getDay()));
+    const start = new Date(end); start.setDate(start.getDate() - 26*7 + 1);
+    const mx = Math.max(1, ...Object.values(day).map(o => o.amt)); let h = '';
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const k = d.toLocaleDateString('en-CA'), o = day[k];
+      h += '<i title="' + k + (o ? ' · ' + inr(o.amt) : '') + '"' + (o ? ' style="background:' + (o.fuel ? C.amber : C.purple) + ';opacity:' + (0.3 + 0.7*o.amt/mx).toFixed(2) + '"' : '') + '></i>';
+    }
+    hm.innerHTML = h;
+  }
 
   // Ownership Cost / Year — uses the vehicle's FULL history regardless of the
   // active time filter, since a single-year trend isn't the point here.
@@ -2795,9 +3141,9 @@ function renderCharts(logs, kmplData, outliers) {
   if(charts.yearlyTco) charts.yearlyTco.destroy();
   charts.yearlyTco = new Chart(document.getElementById('yearlyTcoChart'), {
     type: 'bar',
-    data: { labels: yearKeys, datasets: [{ label: '₹/km', data: yearlyCostPerKm, backgroundColor: C.purple, borderRadius: 6 }] },
+    data: { labels: yearKeys, datasets: [{ label: '₹/km', data: yearlyCostPerKm, backgroundColor: C.purple, borderRadius: 6, maxBarThickness: 90 }] },
     options: {
-      responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: axOpts },
+      responsive: true, maintainAspectRatio: false, scales: { x: axOpts, y: { ...axOpts, ...yT('₹ per km'), beginAtZero: true } },
       plugins: { legend: { display: false }, tooltip: { ...tooltipOpts, callbacks: { label: ctx => ctx.parsed.y != null ? `₹${ctx.parsed.y}/km` : 'No distance data' } } }
     }
   });
@@ -3732,7 +4078,7 @@ async function processReceipt(event) {
   }
 }
 
-window.onload = init;
+window.onload = () => { setupChartTabs(); setupMainTabs(); init(); };
 </script>
 <footer style="text-align:center;padding:24px 16px 32px;font-size:13px;color:var(--text3);">
   <span>FuelIQ</span> &middot;
