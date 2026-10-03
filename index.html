@@ -201,6 +201,21 @@
   .ov-stat .v .kpi-unit{font-size:11px;margin-left:2px}
   .ov-stat .s{font-size:11px;color:var(--text2)}
   .ov-stat .spark{margin-top:6px;height:22px}
+  .st-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+  @media (max-width:1024px){.st-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .st-t .st-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:var(--bg3);margin-bottom:10px}
+  .st-t .st-l{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text3);text-transform:uppercase}
+  .st-t .st-v{font-family:var(--font-mono);font-size:24px;font-weight:700;margin:4px 0 2px;color:var(--text)}
+  .st-t .st-s{font-size:12px;color:var(--text2)}
+  .st-t.bad .st-v{color:var(--red)}.st-t.good .st-v{color:var(--green)}
+  .st-bar{position:relative;height:14px;border-radius:8px;background:var(--bg3);margin:18px 0 12px}
+  .st-bar i{position:absolute;top:0;bottom:0;border-radius:8px}
+  .st-bar u{position:absolute;top:-5px;bottom:-5px;width:3px;border-radius:2px;background:var(--text)}
+  .st-lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--text2)}.st-lg b{color:var(--text);font-family:var(--font-mono)}
+  .st-lg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c)}
+  .st-verdict{font-size:15px;font-weight:600;margin:2px 0 0}
+  #ovwAlerts:empty::before{content:"✓ All clear. Nothing needs you right now.";display:block;color:var(--green);font-weight:600;padding:4px 0 12px}
+  .tr{font-size:11px;font-weight:700;margin-top:4px}.tr span{font-weight:500;color:var(--text3)}.tr-g{color:var(--green)}.tr-b{color:var(--red)}.tr-n{color:var(--text3)}
   .ov-line{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;color:var(--text)}
   .ov-line span{display:block;font-size:12px;color:var(--text2)}
   #ovwAlerts .alert-stack{margin:0}
@@ -2661,7 +2676,7 @@ function setupMainTabs() {
   const home = page('ovw', 'overview', '<div id="homeBanner"></div><div class="home-grid" id="homeGrid"></div>');
   const save = page('pageSave', 'save', '<div id="inSave"></div>'); save.appendChild(grid(['priceTrendChart', 'usageChart']));
   const own = page('pageOwn', 'own', '<div class="ov-hero" id="ovwHero"></div><div class="ov-stats" id="ovwStats"></div><div hidden id="ovwChart"></div><span hidden id="ovwChartNote"></span>'); own.appendChild(grid(['spendChart', 'costTrendChart', 'cumSpendChart', 'expenseCatChart', 'yearlyTcoChart']));
-  const stay = page('pageStay', 'stay', '<div class="ov-card"><p class="ov-lbl">NEEDS ATTENTION</p><div id="ovwAlerts"></div><div id="ovwLines"></div><button class="hc-link" onclick="openReminderModal()">Manage reminders</button></div><div id="inStay"></div>');
+  const stay = page('pageStay', 'stay', '<div class="ov-card"><p class="ov-lbl">NEEDS ATTENTION</p><div id="ovwAlerts"></div><div id="ovwLines" hidden></div><button class="hc-link" onclick="openReminderModal()">Manage reminders</button></div><div id="inStay"></div>');
   const mile = page('pageMileage', 'mileage', '<div id="gaugeSlot"></div><div id="inMile"></div>'); mile.appendChild(grid(['kmplChart', 'effPriceChart', 'fillIntervalChart', 'runChart', 'odoChart', 'calHeat'], ['kmplChart', 'calHeat']));
   if (gauge) mile.querySelector('#gaugeSlot').appendChild(gauge);
   const first = secs.find(x => x.dataset.tabPanel === 'log' || x.classList.contains('ovw-old')) || null;
@@ -2696,7 +2711,7 @@ function renderInsights(logs, kmplData) {
   window._ins = {};
   const byDate = (a, b) => a.date.localeCompare(b.date);
   const fuel = logs.filter(l => l.type === 'fuel' && l.litres > 0 && l.ppl > 0).sort(byDate);
-  if (fuel.length < 4) { const m = '<div class="ov-card"><p class="in-h">Unlocks after a few fills</p><p class="in-p">Log at least 4 fill-ups and this page will compare stations, weekdays and driving modes, forecast your spend and let you test what-if scenarios.</p></div>'; put('inSave', m); put('inStay', m); put('inMile', m); return; }
+  if (fuel.length < 4) { const m = '<div class="ov-card"><p class="in-h">Unlocks after a few fills</p><p class="in-p">Log at least 4 fill-ups and this page will compare stations and driving modes, forecast your spend and let you test what-if scenarios.</p></div>'; const sb = stayBase(); put('inSave', m); put('inStay', `<div class="st-grid">${sb.last}${sb.range}</div>` + m); put('inMile', m); return; }
   const day = (a, b) => (new Date(b) - new Date(a)) / 864e5;
   const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
   const med = a => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
@@ -2711,9 +2726,6 @@ function renderInsights(logs, kmplData) {
   const st = Object.entries(stg).map(([k, a]) => ({ k, n: a.length, ppl: wavg(a), prem: a.reduce((t, l) => t + l.litres * (l.ppl - mAvg[l.date.slice(0, 7)]), 0) / a.reduce((t, l) => t + l.litres, 0) })).filter(x => x.n >= 2).sort((a, b) => a.prem - b.prem);
   const best = st[0], maxP = Math.max(0.5, ...st.map(x => Math.abs(x.prem)));
   const stHtml = st.map(x => `<div class="in-row"><span>${esc(x.k)}</span><div class="ov-bar"><i style="width:${Math.max(4, Math.abs(x.prem) / maxP * 100)}%;background:${x.prem <= 0 ? C.green : C.red}"></i></div><b style="color:${x.prem <= 0 ? C.green : C.red}">${x.prem <= 0 ? '−' : '+'}₹${Math.abs(x.prem).toFixed(1)}/L</b></div><div class="ov-sub" style="margin:-4px 0 4px">${x.n} fills · average ₹${x.ppl.toFixed(1)}/L</div>`).join('') || '<p class="in-p">Needs 2+ fills at a station in months with 2+ fills.</p>';
-  // Weekday: price versus that month's average, in percent
-  const wd = {}; fuel.forEach(l => { const m = mAvg[l.date.slice(0, 7)]; if (m) (wd[new Date(l.date + 'T00:00:00').getDay()] = wd[new Date(l.date + 'T00:00:00').getDay()] || []).push((l.ppl - m) / m * 100); });
-  const wdRows = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((nm, i) => { const a = wd[i]; if (!a || a.length < 2) return `<div class="in-row"><span>${nm}</span><span class="in-p" style="margin:0">not enough fills</span><b>–</b></div>`; const d = avg(a); return `<div class="in-row"><span>${nm} <small style="color:var(--text3)">(${a.length})</small></span><div class="ov-bar"><i style="width:${Math.min(100, Math.max(4, 50 + d * 8))}%;background:${d <= 0 ? C.green : C.red}"></i></div><b style="color:${d <= 0 ? C.green : C.red}">${d >= 0 ? '+' : ''}${d.toFixed(1)}%</b></div>`; }).join('');
   // Driving mode: distance between consecutive fills, grouped by the usage tag of the later fill
   const byOdo = fuel.filter(l => typeof l.odo === 'number').sort((a, b) => a.odo - b.odo), md = {};
   for (let i = 1; i < byOdo.length; i++) { const c = byOdo[i], km = c.odo - byOdo[i - 1].odo; if (km <= 0 || c.missedPrev || !c.usage) continue; const o = md[c.usage] = md[c.usage] || { km: 0, L: 0, A: 0, n: 0 }; o.km += km; o.L += c.litres; o.A += c.amt; o.n++; }
@@ -2737,10 +2749,25 @@ function renderInsights(logs, kmplData) {
   window._ins = { saving, savingYr, best, ranked: st.slice(0, 2), nextD, overdue, gap, mEnd, bud, modes: modes.map(x => ({ k: x.k, kmpl: x.kmpl })) };
   const eMin = Math.max(1, Math.floor(curE * .6)), eMax = Math.max(eMin + 1, Math.ceil(curE * 1.6));
   const saveHtml = `<div class="in-win">${savingYr > 200 ? `About <strong>${inr(savingYr)} a year</strong> could be saved by always filling at the cheapest price you found that month.` : 'Your fill prices are close to the cheapest you found each month.'}${best ? ` Your cheapest station on average is <strong>${esc(best.k)}</strong> (₹${Math.abs(best.prem).toFixed(1)}/L ${best.prem <= 0 ? 'below' : 'above'} the monthly average).` : ''}</div>` +
-    `<div class="in-grid"><div class="ov-card"><p class="in-h">Station league</p><p class="in-p">Average price versus that month's average, so price rises over time do not skew it. 2+ fills per station.</p>${stHtml}</div>` +
-    `<div class="ov-card"><p class="in-h">Cheapest weekday to fill</p><p class="in-p">Price versus that month's average. Fills in brackets.</p>${wdRows}</div></div>`;
-  let mileHtml = `<div class="ov-card"><p class="in-h">City vs highway</p><p class="in-p">Real efficiency and fuel cost per km for each driving mode (distance between fills).</p>${uRows}</div>`;
-  const stayHtml = `<div class="ov-card"><p class="in-h">Forecast</p><p class="in-p">Based on your own pace.</p><div class="in-row"><span>Month end</span><span class="in-p" style="margin:0">${bud ? 'budget ' + inr(bud) : 'no budget set'} · last ${Math.round(win)} days pace</span><b style="color:${bud && mEnd > bud ? C.red : 'var(--text)'}">${inr(mEnd)}</b></div><div class="in-row"><span>Next ${VU.fill}</span><span class="in-p" style="margin:0">usually every ~${gap ? Math.round(gap) : '–'} days</span><b>${nextTxt}</b></div><div class="in-row"><span>Yearly run-rate</span><span class="in-p" style="margin:0">all costs, full history</span><b>${inr(perDayAll * 365)}</b></div></div>`;
+    `<div class="in-grid" style="grid-template-columns:1fr"><div class="ov-card"><p class="in-h">Station league</p><p class="in-p">Average price versus that month's average, so price rises over time do not skew it. 2+ fills per station.</p>${stHtml}</div>` + '</div>';
+  const effs = fuel.filter(l => kmplData[l.id]).map(l => ({ d: l.date, v: kmplData[l.id] })), tgt = Number(getEffTarget()) || 0, fd = d => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const mrow = (a, b, c) => `<div class="in-row"><span>${a}</span><span class="in-p" style="margin:0">${b}</span><b>${c}</b></div>`;
+  let snap = '';
+  if (effs.length >= 3) {
+    const vs = effs.map(x => x.v), r5 = vs.slice(-5), p5 = vs.slice(-10, -5), a5 = avg(r5), dd = p5.length ? (a5 - avg(p5)) / avg(p5) * 100 : null;
+    const bst = effs.reduce((a, b) => b.v > a.v ? b : a), wst = effs.reduce((a, b) => b.v < a.v ? b : a), hit = tgt ? effs.filter(x => x.v >= tgt).length : 0;
+    snap = `<div class="ov-card"><p class="in-h">Efficiency snapshot</p><p class="in-p">From your logged ${VU.fills}, in ${VU.eff}.</p>` + mrow('Latest', fd(effs[effs.length - 1].d), effs[effs.length - 1].v.toFixed(1)) + mrow('Last ' + r5.length + ' average', dd == null ? 'not enough history' : `<span style="color:${dd >= 0 ? C.green : C.red}">${dd >= 0 ? '▲' : '▼'} ${Math.abs(dd).toFixed(1)}% vs the ${p5.length} before</span>`, a5.toFixed(1)) + mrow('Best', fd(bst.d), `<span style="color:${C.green}">${bst.v.toFixed(1)}</span>`) + mrow('Worst', fd(wst.d), `<span style="color:${C.red}">${wst.v.toFixed(1)}</span>`) + (tgt ? mrow('At or above target', `${tgt} ${VU.eff}`, `${hit} of ${effs.length}`) : '') + '</div>';
+  }
+  let mileHtml = snap + `<div class="ov-card"><p class="in-h">City vs highway</p><p class="in-p">Real efficiency and fuel cost per km for each driving mode (distance between fills).</p>${uRows}</div>`;
+  const sb = stayBase(), dLeft = dim - now.getDate(), dayExp = dLeft ? Math.max(0, mEnd - mSpend) / dLeft : 0, over = bud && mEnd > bud;
+  const nDays = nextD ? Math.round((nextD - new Date(todayS + 'T00:00:00')) / 864e5) : null;
+  const tNext = stTile('📅', 'Next ' + VU.fill, nextTxt, nextD ? (overdue ? 'Overdue, usually every ~' + Math.round(gap) + ' days' : 'In ' + nDays + (nDays === 1 ? ' day' : ' days') + ' · every ~' + Math.round(gap) + ' days') : 'Needs a few more fills', overdue ? 'bad' : '');
+  const tEnd = stTile('📈', 'Month-end forecast', inr(mEnd), bud ? (over ? inr(mEnd - bud) + ' over budget' : inr(bud - mEnd) + ' under budget') : 'No budget set', over ? 'bad' : bud ? 'good' : '');
+  const mx = Math.max(bud, mEnd, mSpend, 1) * 1.08, sw = mSpend / mx * 100, pw = Math.max(mEnd - mSpend, 0) / mx * 100, col = over ? C.red : C.green;
+  const verdict = bud ? (over ? `At this pace you will pass your budget by <span style="color:${C.red}">${inr(mEnd - bud)}</span>.` : `You are on track, with about <span style="color:${C.green}">${inr(bud - mEnd)}</span> to spare.`) : 'Set a monthly budget to see if you are on track.';
+  const month = `<div class="ov-card"><p class="ov-lbl">THIS MONTH</p><p class="st-verdict">${verdict}</p><div class="st-bar"><i style="left:0;width:${sw}%;background:${C.amber}"></i><i style="left:${sw}%;width:${pw}%;background:${col};opacity:.35"></i>${bud ? `<u style="left:${Math.min(99.5, bud / mx * 100)}%" title="Budget"></u>` : ''}</div><div class="st-lg"><span style="--c:${C.amber}">Spent <b>${inr(mSpend)}</b></span><span style="--c:${col}">Expected by month end <b>${inr(mEnd)}</b></span>${bud ? `<span style="--c:var(--text)">Budget <b>${inr(bud)}</b></span>` : `<a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber);font-weight:600">Set budget</a>`}<span style="--c:var(--text3)">${dLeft} days left · about <b>${inr(dayExp)}</b> a day</span></div></div>`;
+  const run = `<div class="st-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">` + stTile('🗓️', 'Yearly run-rate', inr(perDayAll * 365), 'All costs, full history') + stTile('☀️', 'Daily pace', inr(perDayRecent), 'Average over the last ' + Math.round(win) + ' days') + stTile('🔁', 'Fill interval', gap ? '~' + Math.round(gap) + ' days' : '–', 'Typical gap between ' + VU.fills) + `</div>`;
+  const stayHtml = `<div class="st-grid">${tNext}${sb.range}${sb.last}${tEnd}</div>` + month + run;
   mileHtml += curE > 0 && km > 0 ? `<div class="ov-card in-wi"><p class="in-h">What-if simulator</p><p class="in-p">Move the sliders to see your yearly fuel bill at about ${Math.round(km).toLocaleString('en-IN')} km a year.</p><div class="in-grid"><div><label><span>Efficiency (${VU.eff})</span><b id="wiEv">${curE.toFixed(1)}</b></label><input type="range" id="wiE" min="${eMin}" max="${eMax}" step="0.1" value="${curE}" oninput="wiUpdate()"><label><span>Price (${VU.price})</span><b id="wiPv">${curP.toFixed(1)}</b></label><input type="range" id="wiP" min="${Math.floor(curP * .8)}" max="${Math.ceil(curP * 1.4)}" step="0.5" value="${curP}" oninput="wiUpdate()"></div><div><p class="in-p" style="margin-top:12px">Yearly fuel cost</p><p class="in-big" id="wiCost">–</p><p class="in-sub ov-sub" id="wiDelta"></p></div></div></div>` : '';
   put('inSave', saveHtml); put('inStay', stayHtml); put('inMile', mileHtml);
   if (document.getElementById('wiE')) wiUpdate();
@@ -2798,6 +2825,44 @@ function renderHome(logs, avgKmpl, kmplData) {
   g.innerHTML = c1 + c2 + c3 + c4;
 }
 
+
+/* Own tab: change vs previous period. Window follows the time filter; 'All' uses last 3 months vs the 3 before. */
+function ownTrend() {
+  const veh = appData.settings.activeVehicle, now = new Date(), f = timeFilter;
+  const all = appData.logs.filter(l => l.vehicle === veh).sort((a, b) => a.date.localeCompare(b.date)), kd = computeKmplEngine(all);
+  const ymd = d => d.toLocaleDateString('en-CA'), back = n => { const d = new Date(now); d.setMonth(d.getMonth() - n); return d; };
+  const before = d => { const x = new Date(d); x.setDate(x.getDate() - 1); return x; }, R = (a, b) => ({ a: ymd(a), b: ymd(b) });
+  const sameDay = (y, m) => new Date(y, m, Math.min(now.getDate(), new Date(y, m + 1, 0).getDate()));
+  const y = now.getFullYear(), m = now.getMonth();
+  const mtd = { cur: R(new Date(y, m, 1), now), prev: R(new Date(y, m - 1, 1), sameDay(y, m - 1)) };
+  let cur, prev, lbl;
+  if (f === 'M') { cur = mtd.cur; prev = mtd.prev; lbl = 'vs last month'; }
+  else if (f === 'YTD') { cur = R(new Date(y, 0, 1), now); prev = R(new Date(y - 1, 0, 1), sameDay(y - 1, m)); lbl = 'vs last year'; }
+  else { const n = { '3M': 3, '6M': 6, '12M': 12 }[f] || 3; cur = R(back(n), now); prev = R(back(2 * n), before(back(n))); lbl = f === 'All' ? 'last 3M vs prior 3M' : 'vs prior ' + n + 'M'; }
+  const calc = r => {
+    const L = all.filter(l => l.date >= r.a && l.date <= r.b), fu = L.filter(l => l.type === 'fuel' && typeof l.odo === 'number').sort((x, z) => x.odo - z.odo);
+    let fs = 0, os = 0, lit = 0, kv = []; L.forEach(l => { if (l.type === 'fuel') { fs += l.amt || 0; lit += l.litres || 0; if (kd[l.id]) kv.push(kd[l.id]); } else os += l.amt || 0; });
+    const dist = fu.length > 1 ? fu[fu.length - 1].odo - fu[0].odo : 0, mo = new Set(L.map(l => l.date.slice(0, 7))).size || 1, tot = fs + os;
+    return { dist, fs, os, tot, price: lit ? fs / lit : 0, mo: tot / mo, eff: kv.length ? kv.reduce((a, b) => a + b, 0) / kv.length : 0, tco: dist ? tot / dist : 0 };
+  };
+  return { cur: calc(cur), prev: calc(prev), lbl, mtd: { cur: calc(mtd.cur), prev: calc(mtd.prev) } };
+}
+function trendTag(c, p, goodUp, lbl) {
+  if (!p || !isFinite(c) || !isFinite(p)) return '<div class="tr tr-n">– no earlier data</div>';
+  const d = (c - p) / p * 100; if (Math.abs(d) < 0.5) return `<div class="tr tr-n">▬ flat <span>${lbl}</span></div>`;
+  const up = d > 0, cls = goodUp === null ? 'tr-n' : (up === goodUp ? 'tr-g' : 'tr-b');
+  return `<div class="tr ${cls}">${up ? '▲' : '▼'} ${Math.abs(d).toFixed(1)}% <span>${lbl}</span></div>`;
+}
+
+function stTile(ic, l, v, sub, cls) { return `<div class="ov-card st-t ${cls || ''}"><div class="st-ic">${ic}</div><div class="st-l">${l}</div><div class="st-v">${v}</div><div class="st-s">${sub}</div></div>`; }
+function stayBase() {
+  const VU = vUnits(appData.settings.activeVehicle), g = id => document.getElementById(id), rc = g('rangeCard');
+  const dsf = g('kDaysSinceFill') ? parseFloat(g('kDaysSinceFill').textContent) : NaN, rng = g('kRangeRemaining') ? parseFloat(g('kRangeRemaining').textContent.replace(/,/g, '')) : NaN;
+  const last = isNaN(dsf) ? stTile('⛽', 'Last ' + VU.fill, '–', 'Nothing logged yet') : stTile('⛽', 'Last ' + VU.fill, dsf === 0 ? 'Today' : dsf + (dsf === 1 ? ' day ago' : ' days ago'), g('kLastFillSub').textContent.replace('Logged ', 'Logged on '));
+  const range = rc && rc.style.display !== 'none' && !isNaN(rng) ? stTile('🛣️', 'Range left', Math.round(rng).toLocaleString('en-IN') + ' km', 'Estimated from your last full ' + VU.fill) : stTile('🛣️', 'Range left', '–', 'Log a ' + VU.fill + ' to estimate');
+  return { last, range };
+}
+
 function renderOverview(logs, avgKmpl) {
   const o = document.getElementById('ovw'); if (!o) return;
   const VU = vUnits(appData.settings.activeVehicle), t = Number(getEffTarget()) || 0, el = id => document.getElementById(id);
@@ -2807,12 +2872,12 @@ function renderOverview(logs, avgKmpl) {
   const cm = new Date().toLocaleDateString('en-CA').slice(0, 7);
   const mSpend = appData.logs.filter(l => l.vehicle === veh && l.date.startsWith(cm)).reduce((a, l) => a + l.amt, 0);
   const tco = num(txt('kTcoKm')), fk = Math.min(num(txt('kCostKm')), tco), ek = Math.max(0, tco - fk);
-  const pe = t && avgKmpl ? Math.min(100, avgKmpl / t * 100) : 0, pb = bud ? mSpend / bud * 100 : 0;
+  const T = ownTrend(), pe = t && avgKmpl ? Math.min(100, avgKmpl / t * 100) : 0, pb = bud ? mSpend / bud * 100 : 0;
   const bc = pb >= 100 ? C.red : pb >= 80 ? C.amber : C.green;
   el('ovwHero').innerHTML =
-    `<div class="ov-card"><p class="ov-lbl">EFFICIENCY</p><p class="ov-big">${avgKmpl ? avgKmpl.toFixed(1) : '—'}<small>${VU.eff}</small></p><div class="ov-bar"><i style="width:${pe}%;background:${C.amber}"></i></div><p class="ov-sub">${t ? Math.round(pe) + '% of ' + t + ' target' : 'No target set'}</p></div>` +
-    `<div class="ov-card"><p class="ov-lbl">TRUE COST PER KM</p><p class="ov-big">${tco ? '₹' + tco.toFixed(1) : '—'}</p><div class="ov-bar"><i style="width:${tco ? fk / tco * 100 : 0}%;background:${C.amber}"></i><i style="width:${tco ? ek / tco * 100 : 0}%;background:${C.purple}"></i></div><p class="ov-sub">Fuel ₹${fk.toFixed(1)} + other ₹${ek.toFixed(1)}</p></div>` +
-    `<div class="ov-card"><p class="ov-lbl">SPEND THIS MONTH</p><p class="ov-big">${inr(mSpend)}</p>${bud ? `<div class="ov-bar"><i style="width:${Math.min(100, pb)}%;background:${bc}"></i></div><p class="ov-sub">${Math.round(pb)}% of ${inr(bud)} budget</p>` : `<p class="ov-sub">No budget set. <a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber)">Set budget</a></p>`}</div>`;
+    `<div class="ov-card"><p class="ov-lbl">EFFICIENCY</p><p class="ov-big">${avgKmpl ? avgKmpl.toFixed(1) : '—'}<small>${VU.eff}</small></p><div class="ov-bar"><i style="width:${pe}%;background:${C.amber}"></i></div><p class="ov-sub">${t ? Math.round(pe) + '% of ' + t + ' target' : 'No target set'}</p>${trendTag(T.cur.eff, T.prev.eff, true, T.lbl)}</div>` +
+    `<div class="ov-card"><p class="ov-lbl">TRUE COST PER KM</p><p class="ov-big">${tco ? '₹' + tco.toFixed(1) : '—'}</p><div class="ov-bar"><i style="width:${tco ? fk / tco * 100 : 0}%;background:${C.amber}"></i><i style="width:${tco ? ek / tco * 100 : 0}%;background:${C.purple}"></i></div><p class="ov-sub">Fuel ₹${fk.toFixed(1)} + other ₹${ek.toFixed(1)}</p>${trendTag(T.cur.tco, T.prev.tco, false, T.lbl)}</div>` +
+    `<div class="ov-card"><p class="ov-lbl">SPEND THIS MONTH</p><p class="ov-big">${inr(mSpend)}</p>${bud ? `<div class="ov-bar"><i style="width:${Math.min(100, pb)}%;background:${bc}"></i></div><p class="ov-sub">${Math.round(pb)}% of ${inr(bud)} budget</p>` : `<p class="ov-sub">No budget set. <a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber)">Set budget</a></p>`}${trendTag(T.mtd.cur.tot, T.mtd.prev.tot, false, 'vs same point last month')}</div>`;
   const ms = {}; logs.forEach(l => { const m = l.date.slice(0, 7); ms[m] = (ms[m] || 0) + l.amt; });
   const ks = Object.keys(ms).sort().slice(-8), mx = Math.max(1, bud, ...ks.map(k => ms[k])) * 1.1, n = Math.max(ks.length, 1), w = 380 / n;
   const bars = ks.map((k, i) => { const h = ms[k] / mx * 130; return `<rect x="${10 + i * w + w * .18}" y="${150 - h}" width="${w * .64}" height="${h}" rx="3" fill="${C.amber}"><title>${k}: ${inr(ms[k])}</title></rect><text x="${10 + i * w + w / 2}" y="166" font-size="11" text-anchor="middle" fill="${getCssVar('--text3')}">${new Date(k + '-01').toLocaleString('en', { month: 'short' })}</text>`; }).join('');
@@ -2822,7 +2887,8 @@ function renderOverview(logs, avgKmpl) {
   const dsf = num(txt('kDaysSinceFill')), rng = num(txt('kRangeRemaining'));
   el('ovwLines').innerHTML = `<div class="ov-line"><div>Last fill ${dsf} day${dsf === 1 ? '' : 's'} ago<span>${txt('kLastFillSub')}</span></div></div><div class="ov-line"><div>Range left about ${Math.round(rng).toLocaleString('en-IN')} km<span>${txt('kRangeSub')}</span></div></div>`;
   const tiles = [['Distance','kTotalKm','kKmSub','kTotalKm'],['Fuel spend','kFuelSpend','kFillsSub','kFuelSpend'],['Other expenses','kOtherSpend','kExpenseSub','kOtherSpend'],['Avg price','kAvgPrice','','kAvgPrice'],['Total (TCO)','kTotalSpend','','kTotalSpend'],['Monthly avg','kAvgMonthlySpend','kAvgMonthlyDistSub','kAvgMonthlySpend']];
-  el('ovwStats').innerHTML = tiles.map(([l, v, sub, sp]) => { const card = el(sp) && el(sp).closest('.kpi-card'), sk = card && card.querySelector('.spark'); return `<div class="ov-stat"><div class="l">${l}</div><div class="v">${el(v) ? el(v).innerHTML : '—'}</div><div class="s">${sub ? txt(sub) : ''}</div>${sk ? '<div class="spark">' + sk.innerHTML + '</div>' : ''}</div>`; }).join('');
+  const TK = { 'Distance': ['dist', null], 'Fuel spend': ['fs', false], 'Other expenses': ['os', false], 'Avg price': ['price', false], 'Total (TCO)': ['tot', false], 'Monthly avg': ['mo', false] };
+  el('ovwStats').innerHTML = tiles.map(([l, v, sub, sp]) => { const card = el(sp) && el(sp).closest('.kpi-card'), sk = card && card.querySelector('.spark'); return `<div class="ov-stat"><div class="l">${l}</div><div class="v">${el(v) ? el(v).innerHTML : '—'}</div><div class="s">${sub ? txt(sub) : ''}</div>${TK[l] ? trendTag(T.cur[TK[l][0]], T.prev[TK[l][0]], TK[l][1], T.lbl) : ''}${sk ? '<div class="spark">' + sk.innerHTML + '</div>' : ''}</div>`; }).join('');
 }
 
 function renderCharts(logs, kmplData, outliers) {
