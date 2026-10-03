@@ -19,7 +19,7 @@
 <script src="https://accounts.google.com/gsi/client" async defer onload="onGsiLoad()"></script>
 <style>
   :root {
-    --amber: #f59e0b; --amber-dim: #d97706; --amber-glow: rgba(245,158,11,0.2);
+    --amber: #f59e0b; --amber-dim: #d97706; --amber-glow: rgba(245,158,11,0.2); --amber-ink: #fbbf24; --green-ink: #34d399; --red-ink: #f87171;
     --green: #10b981; --blue: #3b82f6; --red: #ef4444; --purple: #8b5cf6;
     --font-mono: 'Chakra Petch', monospace; --font-body: 'DM Sans', sans-serif;
     --card-r: 20px; --trans: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -27,18 +27,19 @@
   
   [data-theme="dark"] {
     --bg: #0b0d14; --bg2: #151822; --bg3: #1e2230;
-    --text: #f8fafc; --text2: #94a3b8; --text3: #64748b;
+    --text: #f8fafc; --text2: #a3b1c6; --text3: #7d8ba1;
     --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.15);
     --shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
     --glow1: rgba(59, 130, 246, 0.15); --glow2: rgba(245, 158, 11, 0.1);
   }
   
   [data-theme="light"] {
-    --bg: #f4f4f5; --bg2: #ffffff; --bg3: #f1f5f9;
-    --text: #0f1117; --text2: #334155; --text3: #64748b;
-    --border: rgba(0,0,0,0.08); --border2: rgba(0,0,0,0.15);
-    --shadow: 0 10px 30px -10px rgba(0,0,0,0.08);
-    --glow1: rgba(59, 130, 246, 0.1); --glow2: rgba(245, 158, 11, 0.1);
+    --bg: #eceff3; --bg3: #e8ecf1; --bg2: #ffffff;
+    --text: #0f1117; --text2: #2b3a4f; --text3: #556579;
+    --border: rgba(15,23,42,0.11); --border2: rgba(15,23,42,0.22);
+    --shadow: 0 1px 2px rgba(15,23,42,0.06), 0 12px 28px -14px rgba(15,23,42,0.18);
+    --amber-ink: #b45309; --green-ink: #047857; --red-ink: #b91c1c;
+    --glow1: rgba(59, 130, 246, 0.04); --glow2: rgba(245, 158, 11, 0.06);
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,7 +69,7 @@
   .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, var(--amber), #fbbf24); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--amber-glow);}
   .logo-icon svg { width: 22px; height: 22px; fill: #0f1117; }
   .logo-text { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text); letter-spacing: -0.5px;}
-  .logo-text span { color: var(--amber); }
+  .logo-text span { color:var(--amber-ink); }
   
   .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   .vehicle-picker { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -84,7 +85,7 @@
   .vd-logo-preview.is-silhouette { background: var(--bg3); padding: 8px; }
   
   .icon-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--trans); }
-  .icon-btn:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-2px); }
+  .icon-btn:hover { border-color: var(--amber); color:var(--amber-ink); transform: translateY(-2px); }
   
   .header-log-btn { background: linear-gradient(135deg, var(--amber), #fbbf24); color: #0f1117; border: none; padding: 8px 16px; border-radius: 10px; font-family: var(--font-mono); font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px var(--amber-glow); transition: var(--trans); display: flex; align-items: center; gap: 6px;}
   .header-log-btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
@@ -158,11 +159,11 @@
   .goal-page{display:flex;flex-direction:column;gap:14px}
   .home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   .home-banner{border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.12);border-radius:14px;padding:16px 20px;margin-bottom:14px}
-  .home-banner .k{font-size:12px;font-weight:700;color:var(--amber);margin:0 0 4px}
+  .home-banner .k{font-size:12px;font-weight:700;color:var(--amber-ink);margin:0 0 4px}
   .home-banner p{margin:0;font-size:16px;color:var(--text)}
   .hc-k{font-size:12px;font-weight:700;color:var(--text3);margin:0}
   .hc-v{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--text);margin:8px 0 6px;line-height:1.25}
-  .hc-link{display:inline-block;margin-top:12px;font-size:13px;color:var(--amber);cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
+  .hc-link{display:inline-block;margin-top:12px;font-size:13px;color:var(--amber-ink);cursor:pointer;background:none;border:0;padding:0;font-family:inherit}
   .hc-li{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:7px 0;border-top:1px solid var(--border);color:var(--text)}
   .hc-li span:last-child{color:var(--text2);text-align:right}
   @media (max-width:768px){.home-grid{grid-template-columns:1fr}}
@@ -203,19 +204,21 @@
   .ov-stat .spark{margin-top:6px;height:22px}
   .st-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
   @media (max-width:1024px){.st-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  .st-t .st-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:var(--bg3);margin-bottom:10px}
+  .st-t .st-ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px;background:color-mix(in srgb,var(--amber) 16%,transparent);margin-bottom:10px}
   .st-t .st-l{font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--text3);text-transform:uppercase}
   .st-t .st-v{font-family:var(--font-mono);font-size:24px;font-weight:700;margin:4px 0 2px;color:var(--text)}
   .st-t .st-s{font-size:12px;color:var(--text2)}
-  .st-t.bad .st-v{color:var(--red)}.st-t.good .st-v{color:var(--green)}
+  .st-t.bad .st-v{color:var(--red-ink)}.st-t.good .st-v{color:var(--green-ink)}
   .st-bar{position:relative;height:14px;border-radius:8px;background:var(--bg3);margin:18px 0 12px}
   .st-bar i{position:absolute;top:0;bottom:0;border-radius:8px}
   .st-bar u{position:absolute;top:-5px;bottom:-5px;width:3px;border-radius:2px;background:var(--text)}
   .st-lg{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--text2)}.st-lg b{color:var(--text);font-family:var(--font-mono)}
   .st-lg span::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:var(--c)}
   .st-verdict{font-size:15px;font-weight:600;margin:2px 0 0}
-  #ovwAlerts:empty::before{content:"✓ All clear. Nothing needs you right now.";display:block;color:var(--green);font-weight:600;padding:4px 0 12px}
-  .tr{font-size:11px;font-weight:700;margin-top:4px}.tr span{font-weight:500;color:var(--text3)}.tr-g{color:var(--green)}.tr-b{color:var(--red)}.tr-n{color:var(--text3)}
+  #ovwAlerts:empty::before{content:"✓ All clear. Nothing needs you right now.";display:block;color:var(--green-ink);font-weight:600;padding:4px 0 12px}
+  .toast.show{pointer-events:auto}.toast .tu{margin-left:12px;background:none;border:1px solid currentColor;color:inherit;border-radius:8px;padding:2px 10px;cursor:pointer;font:inherit;font-weight:700}
+  .sv-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}.sv-row:last-child{border-bottom:0}.sv-row small{color:var(--text3)}
+  .tr{font-size:11px;font-weight:700;margin-top:4px}.tr span{font-weight:500;color:var(--text3)}.tr-g{color:var(--green-ink)}.tr-b{color:var(--red-ink)}.tr-n{color:var(--text3)}
   .ov-line{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;color:var(--text)}
   .ov-line span{display:block;font-size:12px;color:var(--text2)}
   #ovwAlerts .alert-stack{margin:0}
@@ -236,7 +239,7 @@
   .kpi-sub{background:none;border:0;padding:0;margin-top:8px;font-size:12px}
   .kpi-card.hero{padding:22px}
   .kpi-card.hero .kpi-value{font-size:42px}
-  .kpi-card.hero .kpi-label{font-size:12px;color:var(--amber)}
+  .kpi-card.hero .kpi-label{font-size:12px;color:var(--amber-ink)}
   .insight-line{display:flex;gap:10px;align-items:center;padding:12px 16px;margin:0 0 20px;border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:12px;background:var(--bg2);font-size:14px;color:var(--text2)}
   @media (min-width:1025px){
     .kpi-grid{grid-template-columns:repeat(12,1fr)!important;gap:14px!important}
@@ -283,7 +286,7 @@
   .form-tabs { display: flex; gap: 8px; margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
   .form-tab { background: transparent; border: none; color: var(--text3); font-family: var(--font-mono); font-size: 16px; font-weight: 600; cursor: pointer; padding: 8px 16px; position: relative; transition: var(--trans); border-radius: 8px;}
   .form-tab:hover { background: var(--bg3); color: var(--text); }
-  .form-tab.active { color: var(--amber); background: var(--amber-glow);}
+  .form-tab.active { color:var(--amber-ink); background: var(--amber-glow);}
   .form-tab.active::after { content: ''; position: absolute; bottom: -17px; left: 0; width: 100%; height: 3px; background: var(--amber); border-radius: 3px 3px 0 0;}
   
   .scanner-ui-wrap { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; background: var(--bg3); padding: 16px; border-radius: 12px; border: 1px dashed var(--border); margin-bottom: 20px; }
@@ -328,7 +331,7 @@
   
   .kmpl-val { font-family: var(--font-mono); font-size: 14px; font-weight: 700; }
   .kmpl-good { color: var(--green); text-shadow: 0 0 10px rgba(16,185,129,0.3);} 
-  .kmpl-ok { color: var(--amber); text-shadow: 0 0 10px rgba(245,158,11,0.3);} 
+  .kmpl-ok { color:var(--amber-ink); text-shadow: 0 0 10px rgba(245,158,11,0.3);} 
   .kmpl-bad { color: var(--red); text-shadow: 0 0 10px rgba(239,68,68,0.3);}
   .text-strike { text-decoration: line-through; opacity: 0.5; }
   
@@ -350,7 +353,7 @@
   .settings-menu .menu-item, .settings-menu label.menu-item { flex-shrink: 0; }
   @keyframes slideDown { from{opacity:0; transform:translateY(-10px);} to{opacity:1; transform:translateY(0);} }
   .menu-item { background: transparent; border: none; color: var(--text); padding: 12px 16px; text-align: left; font-size: 14px; border-radius: 10px; cursor: pointer; transition: var(--trans); font-family: var(--font-body); display: flex; align-items: center; gap: 10px; width: 100%; justify-content: flex-start; font-weight: 500;}
-  .menu-item:hover { background: var(--bg3); color: var(--amber); }
+  .menu-item:hover { background: var(--bg3); color:var(--amber-ink); }
 
   /* ── UTILS ── */
   .hidden { display: none !important; }
@@ -422,7 +425,7 @@
     font-weight: 600; padding: 6px 4px; border-radius: 10px; flex: 1; min-width: 0; cursor: pointer; transition: var(--trans);
   }
   .bottom-nav .bn-item .bn-icon { font-size: 19px; line-height: 1; }
-  .bottom-nav .bn-item.active { color: var(--amber); }
+  .bottom-nav .bn-item.active { color:var(--amber-ink); }
   .bottom-nav .bn-item:active { background: var(--bg3); }
   .bottom-nav .bn-fab {
     background: linear-gradient(135deg, var(--amber), #fbbf24); color: #0f1117; border-radius: 16px;
@@ -613,17 +616,19 @@
   
   <div class="settings-menu" id="settingsMenu">
     <button class="menu-item" onclick="openGDriveModal()">🔗 Google Drive Sync <span id="menuLastSync" style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:600;"></span></button>
-    <button class="menu-item" onclick="toggleCalcMode()">⚙️ Calc Mode: <strong id="menuCalcMode" style="color:var(--amber);margin-left:auto;">Rolling Avg</strong></button>
-    <button class="menu-item" id="rollingWindowMenuItem" onclick="cycleRollingWindow()">🔁 Rolling Window: <strong id="menuRollingWindow" style="color:var(--amber);margin-left:auto;">3 fills</strong></button>
-    <button class="menu-item" onclick="promptSetTarget()">🎯 <span id="menuTargetLabel">Target KMPL</span>: <strong id="menuTargetKmpl" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="toggleCalcMode()">⚙️ Calc Mode: <strong id="menuCalcMode" style="color:var(--amber-ink);margin-left:auto;">Rolling Avg</strong></button>
+    <button class="menu-item" id="rollingWindowMenuItem" onclick="cycleRollingWindow()">🔁 Rolling Window: <strong id="menuRollingWindow" style="color:var(--amber-ink);margin-left:auto;">3 fills</strong></button>
+    <button class="menu-item" onclick="promptSetTarget()">🎯 <span id="menuTargetLabel">Target KMPL</span>: <strong id="menuTargetKmpl" style="color:var(--amber-ink);margin-left:auto;">Not set</strong></button>
     <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
     <button class="menu-item" onclick="openReminderModal()">🔔 Manage Reminders</button>
-    <button class="menu-item" onclick="promptSetBudget()">💰 Monthly Budget: <strong id="menuBudget" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
-    <button class="menu-item" onclick="promptSetTankCapacity()"><span id="menuTankLabel">⛽ Tank Capacity</span>: <strong id="menuTankCap" style="color:var(--amber);margin-left:auto;">Not set</strong></button>
-    <button class="menu-item" onclick="promptSetVehicleType()">🔌 Vehicle Type: <strong id="menuVehType" style="color:var(--amber);margin-left:auto;">Fuel</strong></button>
+    <button class="menu-item" onclick="promptSetBudget()">💰 Monthly Budget: <strong id="menuBudget" style="color:var(--amber-ink);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="promptSetTankCapacity()"><span id="menuTankLabel">⛽ Tank Capacity</span>: <strong id="menuTankCap" style="color:var(--amber-ink);margin-left:auto;">Not set</strong></button>
+    <button class="menu-item" onclick="promptSetVehicleType()">🔌 Vehicle Type: <strong id="menuVehType" style="color:var(--amber-ink);margin-left:auto;">Fuel</strong></button>
     <hr style="border:0; border-top:1px solid var(--border); margin:6px 0;">
     <button class="menu-item" onclick="openAnnualSummary()">📅 Annual Summary</button>
     <button class="menu-item" onclick="openMonthlyReportModal()">📧 Monthly Email Report</button>
+    <button class="menu-item" onclick="promptWhatsApp()">💬 WhatsApp alerts: <strong id="menuWa" style="color:var(--amber-ink);margin-left:auto;">Off</strong></button>
+    <button class="menu-item" onclick="sendWaDigest(true)">📨 Send digest to WhatsApp now</button>
     <button class="menu-item" onclick="window.print()">🖨️ Print Dashboard</button>
     <button class="menu-item" onclick="promptAddVehicle()">🚘 Add New Vehicle</button>
     <button class="menu-item" onclick="openVehicleDetailsModal()">📇 Vehicle Details <span id="menuVehDetails" style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:600;"></span></button>
@@ -1039,9 +1044,15 @@
           <option value="Custom">Custom</option>
         </select>
       </div>
+      <div class="form-group"><label>Quick preset (check your manual)</label>
+        <select id="remPreset" onchange="applyRemPreset()"><option value="">Choose a preset…</option></select>
+      </div>
       <div class="form-group"><label>Label</label><input type="text" id="remLabel" placeholder="e.g., Annual service"></div>
       <div class="form-group"><label>Due Date (optional)</label><input type="date" id="remDueDate"></div>
       <div class="form-group"><label>Due Odometer (optional, km)</label><input type="number" id="remDueOdo" step="1" min="0" placeholder="e.g., 15000"></div>
+      <div class="form-group"><label>Repeat every (km)</label><input type="number" id="remRepKm" min="0" step="500" placeholder="e.g., 10000"></div>
+      <div class="form-group"><label>Repeat every (months)</label><input type="number" id="remRepMo" min="0" step="1" placeholder="e.g., 12"></div>
+      <div class="form-group"><label>Estimated cost (₹)</label><input type="number" id="remCost" min="0" step="100" placeholder="for the forecast"></div>
     </div>
     <div class="modal-close-row">
       <button class="btn-primary" onclick="addReminder()">Add Reminder</button>
@@ -1609,7 +1620,7 @@ async function gdriveReconcile() {
       } else if (remoteTime > gdrive.lastSyncedAt + 1500) {
         if (!gdrive.dirty) {
           await gdriveDownload(remote.modifiedTime, true);          // edited on another device, nothing pending here → just take it
-        } else if (confirm('This device and Google Drive both have changes the other doesn\'t.\n\nOK = use the Google Drive version\nCancel = keep this device\'s version (replaces the copy in Drive)')) {
+        } else if (confirm('This device and Google Drive both have changes the other doesn\'t.\n\nOK = use the Google Drive version\nCancel = keep this device\'s version (replaces the copy in Drive)\n\nIf you choose the Drive version, you can undo it for a few seconds and a backup of this device is kept.')) {
           await gdriveDownload(remote.modifiedTime);
         } else {
           await gdriveDoUpload(false);
@@ -1678,6 +1689,7 @@ async function gdriveDownload(remoteModifiedTime, silent) {
     const data = await res.json();
     if (!data || !Array.isArray(data.logs) || !data.settings) throw new Error('unexpected file contents');
     const theme = appData && appData.settings && appData.settings.theme;   // light/dark is a per-device choice
+    const prevLocal = JSON.stringify(appData); try { localStorage.setItem('fueliq_pre_sync_backup', prevLocal); } catch (e) {}
     appData = data;
     if (theme) appData.settings.theme = theme;
     save(false);
@@ -1686,6 +1698,7 @@ async function gdriveDownload(remoteModifiedTime, silent) {
     saveGDriveConfig();
     init();
     updateGDriveSyncBadge('synced');
+    if (!silent) showToast('This device now matches Google Drive.', 'ok', () => { appData = JSON.parse(prevLocal); save(); init(); showToast('Your device version is back (and will replace Drive).'); });
     showToast(silent ? 'Your data was loaded from Google Drive' : 'Loaded your data from Google Drive');
     return true;
   } catch (e) {
@@ -1736,7 +1749,7 @@ async function checkForRemoteUpdate() {
     if (gdrive.lastSyncedAt && remoteTime > gdrive.lastSyncedAt + 1500) {
       if (!gdrive.dirty) {
         await gdriveDownload(meta.modifiedTime, true);
-      } else if (confirm('This device and Google Drive both have changes the other doesn\'t.\n\nOK = use the Google Drive version\nCancel = keep this device\'s version (replaces the copy in Drive)')) {
+      } else if (confirm('This device and Google Drive both have changes the other doesn\'t.\n\nOK = use the Google Drive version\nCancel = keep this device\'s version (replaces the copy in Drive)\n\nIf you choose the Drive version, you can undo it for a few seconds and a backup of this device is kept.')) {
         await gdriveDownload(meta.modifiedTime);
       } else {
         await gdriveDoUpload(false);
@@ -2765,9 +2778,11 @@ function renderInsights(logs, kmplData) {
   const tEnd = stTile('📈', 'Month-end forecast', inr(mEnd), bud ? (over ? inr(mEnd - bud) + ' over budget' : inr(bud - mEnd) + ' under budget') : 'No budget set', over ? 'bad' : bud ? 'good' : '');
   const mx = Math.max(bud, mEnd, mSpend, 1) * 1.08, sw = mSpend / mx * 100, pw = Math.max(mEnd - mSpend, 0) / mx * 100, col = over ? C.red : C.green;
   const verdict = bud ? (over ? `At this pace you will pass your budget by <span style="color:${C.red}">${inr(mEnd - bud)}</span>.` : `You are on track, with about <span style="color:${C.green}">${inr(bud - mEnd)}</span> to spare.`) : 'Set a monthly budget to see if you are on track.';
-  const month = `<div class="ov-card"><p class="ov-lbl">THIS MONTH</p><p class="st-verdict">${verdict}</p><div class="st-bar"><i style="left:0;width:${sw}%;background:${C.amber}"></i><i style="left:${sw}%;width:${pw}%;background:${col};opacity:.35"></i>${bud ? `<u style="left:${Math.min(99.5, bud / mx * 100)}%" title="Budget"></u>` : ''}</div><div class="st-lg"><span style="--c:${C.amber}">Spent <b>${inr(mSpend)}</b></span><span style="--c:${col}">Expected by month end <b>${inr(mEnd)}</b></span>${bud ? `<span style="--c:var(--text)">Budget <b>${inr(bud)}</b></span>` : `<a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber);font-weight:600">Set budget</a>`}<span style="--c:var(--text3)">${dLeft} days left · about <b>${inr(dayExp)}</b> a day</span></div></div>`;
+  const month = `<div class="ov-card"><p class="ov-lbl">THIS MONTH</p><p class="st-verdict">${verdict}</p><div class="st-bar"><i style="left:0;width:${sw}%;background:${C.amber}"></i><i style="left:${sw}%;width:${pw}%;background:${col};opacity:.35"></i>${bud ? `<u style="left:${Math.min(99.5, bud / mx * 100)}%" title="Budget"></u>` : ''}</div><div class="st-lg"><span style="--c:${C.amber}">Spent <b>${inr(mSpend)}</b></span><span style="--c:${col}">Expected by month end <b>${inr(mEnd)}</b></span>${bud ? `<span style="--c:var(--text)">Budget <b>${inr(bud)}</b></span>` : `<a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber-ink);font-weight:600">Set budget</a>`}<span style="--c:var(--text3)">${dLeft} days left · about <b>${inr(dayExp)}</b> a day</span></div></div>`;
   const run = `<div class="st-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:12px">` + stTile('🗓️', 'Yearly run-rate', inr(perDayAll * 365), 'All costs, full history') + stTile('☀️', 'Daily pace', inr(perDayRecent), 'Average over the last ' + Math.round(win) + ' days') + stTile('🔁', 'Fill interval', gap ? '~' + Math.round(gap) + ' days' : '–', 'Typical gap between ' + VU.fills) + `</div>`;
-  const stayHtml = `<div class="st-grid">${tNext}${sb.range}${sb.last}${tEnd}</div>` + month + run;
+  const so = serviceOutlook(veh, km / 365);
+  const svc = `<div class="ov-card"><p class="ov-lbl">SERVICE COMING UP</p>` + (so.soon.length ? `<p class="st-verdict">${so.total ? 'About ' + inr(so.total) + ' in the next 90 days' : so.soon.length + ' item' + (so.soon.length > 1 ? 's' : '') + ' due in the next 90 days'}</p>` + so.soon.slice(0, 5).map(x => `<div class="sv-row"><span>${esc(x.name)}<br><small>${x.days < 0 ? 'due now' : x.days >= 9999 ? 'by date' : 'in about ' + x.days + ' days'}</small></span><b>${x.cost ? inr(x.cost) : '–'}</b></div>`).join('') + (so.noCost ? `<p class="in-p" style="margin-top:8px">${so.noCost} without an estimate. Add one in Manage reminders.</p>` : '') : `<p class="in-p" style="margin-top:8px">${so.items.length ? 'Nothing due in the next 90 days.' : 'No service scheduled. Add presets like oil change or tyre rotation in Manage reminders and this forecasts the cost.'}</p>`) + `</div>`;
+  const stayHtml = `<div class="st-grid">${tNext}${sb.range}${sb.last}${tEnd}</div>` + month + svc + run;
   mileHtml += curE > 0 && km > 0 ? `<div class="ov-card in-wi"><p class="in-h">What-if simulator</p><p class="in-p">Move the sliders to see your yearly fuel bill at about ${Math.round(km).toLocaleString('en-IN')} km a year.</p><div class="in-grid"><div><label><span>Efficiency (${VU.eff})</span><b id="wiEv">${curE.toFixed(1)}</b></label><input type="range" id="wiE" min="${eMin}" max="${eMax}" step="0.1" value="${curE}" oninput="wiUpdate()"><label><span>Price (${VU.price})</span><b id="wiPv">${curP.toFixed(1)}</b></label><input type="range" id="wiP" min="${Math.floor(curP * .8)}" max="${Math.ceil(curP * 1.4)}" step="0.5" value="${curP}" oninput="wiUpdate()"></div><div><p class="in-p" style="margin-top:12px">Yearly fuel cost</p><p class="in-big" id="wiCost">–</p><p class="in-sub ov-sub" id="wiDelta"></p></div></div></div>` : '';
   put('inSave', saveHtml); put('inStay', stayHtml); put('inMile', mileHtml);
   if (document.getElementById('wiE')) wiUpdate();
@@ -2877,7 +2892,7 @@ function renderOverview(logs, avgKmpl) {
   el('ovwHero').innerHTML =
     `<div class="ov-card"><p class="ov-lbl">EFFICIENCY</p><p class="ov-big">${avgKmpl ? avgKmpl.toFixed(1) : '—'}<small>${VU.eff}</small></p><div class="ov-bar"><i style="width:${pe}%;background:${C.amber}"></i></div><p class="ov-sub">${t ? Math.round(pe) + '% of ' + t + ' target' : 'No target set'}</p>${trendTag(T.cur.eff, T.prev.eff, true, T.lbl)}</div>` +
     `<div class="ov-card"><p class="ov-lbl">TRUE COST PER KM</p><p class="ov-big">${tco ? '₹' + tco.toFixed(1) : '—'}</p><div class="ov-bar"><i style="width:${tco ? fk / tco * 100 : 0}%;background:${C.amber}"></i><i style="width:${tco ? ek / tco * 100 : 0}%;background:${C.purple}"></i></div><p class="ov-sub">Fuel ₹${fk.toFixed(1)} + other ₹${ek.toFixed(1)}</p>${trendTag(T.cur.tco, T.prev.tco, false, T.lbl)}</div>` +
-    `<div class="ov-card"><p class="ov-lbl">SPEND THIS MONTH</p><p class="ov-big">${inr(mSpend)}</p>${bud ? `<div class="ov-bar"><i style="width:${Math.min(100, pb)}%;background:${bc}"></i></div><p class="ov-sub">${Math.round(pb)}% of ${inr(bud)} budget</p>` : `<p class="ov-sub">No budget set. <a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber)">Set budget</a></p>`}${trendTag(T.mtd.cur.tot, T.mtd.prev.tot, false, 'vs same point last month')}</div>`;
+    `<div class="ov-card"><p class="ov-lbl">SPEND THIS MONTH</p><p class="ov-big">${inr(mSpend)}</p>${bud ? `<div class="ov-bar"><i style="width:${Math.min(100, pb)}%;background:${bc}"></i></div><p class="ov-sub">${Math.round(pb)}% of ${inr(bud)} budget</p>` : `<p class="ov-sub">No budget set. <a href="#" onclick="promptSetBudget();return false;" style="color:var(--amber-ink)">Set budget</a></p>`}${trendTag(T.mtd.cur.tot, T.mtd.prev.tot, false, 'vs same point last month')}</div>`;
   const ms = {}; logs.forEach(l => { const m = l.date.slice(0, 7); ms[m] = (ms[m] || 0) + l.amt; });
   const ks = Object.keys(ms).sort().slice(-8), mx = Math.max(1, bud, ...ks.map(k => ms[k])) * 1.1, n = Math.max(ks.length, 1), w = 380 / n;
   const bars = ks.map((k, i) => { const h = ms[k] / mx * 130; return `<rect x="${10 + i * w + w * .18}" y="${150 - h}" width="${w * .64}" height="${h}" rx="3" fill="${C.amber}"><title>${k}: ${inr(ms[k])}</title></rect><text x="${10 + i * w + w / 2}" y="166" font-size="11" text-anchor="middle" fill="${getCssVar('--text3')}">${new Date(k + '-01').toLocaleString('en', { month: 'short' })}</text>`; }).join('');
@@ -3336,7 +3351,7 @@ function renderTable(logs, kmplData, isStrict, outliers) {
         <td><span class="badge type-fuel">${VU.ev ? '⚡ Charge' : 'Fuel'}</span></td>
         <td style="font-family:var(--font-mono); font-weight:500;">${l.odo ? l.odo.toLocaleString()+' km' : '—'}</td>
         <td>${details}</td>
-        <td style="font-family:var(--font-mono); font-weight:700; color:var(--amber);">₹${Math.round(l.amt).toLocaleString()}</td>
+        <td style="font-family:var(--font-mono); font-weight:700; color:var(--amber-ink);">₹${Math.round(l.amt).toLocaleString()}</td>
         <td>${kmplHtml}</td>
         <td style="text-align:right;">
           <button class="icon-btn" onclick="editEntry('${l.id}')" style="width:30px;height:30px;font-size:12px;display:inline-flex;margin-right:6px;" title="Edit">✎</button>
@@ -3508,16 +3523,20 @@ function cancelEdit() {
 }
 
 function deleteEntry(id) {
-  if(!confirm("Delete this entry forever?")) return;
-  appData.logs = appData.logs.filter(l => l.id !== id);
+  const i = appData.logs.findIndex(l => l.id === id); if (i < 0) return;
+  const gone = appData.logs[i];
+  appData.logs.splice(i, 1);
   if(editingId === id) cancelEdit();
-  save(); refreshUI(); showToast("Deleted successfully.");
+  save(); refreshUI();
+  showToast("Entry deleted.", 'ok', () => { appData.logs.splice(Math.min(i, appData.logs.length), 0, gone); save(); refreshUI(); showToast("Entry restored."); });
 }
 
 function clearVehicleData() {
   if(!confirm(`WARNING: Clear ALL data for ${appData.settings.activeVehicle}?`)) return;
+  const before = appData.logs.slice();
   appData.logs = appData.logs.filter(l => l.vehicle !== appData.settings.activeVehicle);
-  save(); refreshUI(); showToast("Data cleared.");
+  save(); refreshUI();
+  showToast("Vehicle data cleared.", 'ok', () => { appData.logs = before; save(); refreshUI(); showToast("Data restored."); });
 }
 
 /* ── IMPORT / EXPORT ── */
@@ -3568,11 +3587,13 @@ function importBackup(e) {
   e.target.value = ''; 
 }
 
-function showToast(msg, type='ok') {
+function showToast(msg, type='ok', undo) {
   const t = document.getElementById('toast');
+  clearTimeout(window._toastT);
   t.textContent = msg;
+  if (undo) { const b = document.createElement('button'); b.className = 'tu'; b.textContent = 'Undo'; b.onclick = () => { t.classList.remove('show'); undo(); }; t.appendChild(b); }
   t.className = `toast show ${type}`;
-  setTimeout(()=>t.classList.remove('show'), 3000);
+  window._toastT = setTimeout(()=>t.classList.remove('show'), undo ? 9000 : 3000);
 }
 
 /* ── BULK CSV IMPORT ── */
@@ -3603,36 +3624,36 @@ function importBulkCSV(event) {
     try {
       const lines = evt.target.result.split(/\r?\n/).filter(l => l.trim().length);
       if (lines.length < 2) { showToast("CSV has no data rows", "error"); event.target.value = ''; return; }
-      let imported = 0, skipped = 0;
+      const veh = appData.settings.activeVehicle, ev = isEV(), seen = new Set(appData.logs.filter(l => l.vehicle === veh).map(l => `${l.date}|${l.type}|${Math.round(l.amt)}|${l.odo ?? ''}`));
+      const good = [], bad = [], dup = []; let warn = 0;
+      const normDate = d => { d = d.trim(); let m = d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/); if (m) d = `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`; const t = new Date(d + 'T00:00:00'); return /^\d{4}-\d{2}-\d{2}$/.test(d) && !isNaN(t) && t.toLocaleDateString('en-CA') === d ? d : null; };
       for (let i = 1; i < lines.length; i++) {
-        const cols = parseCSVLine(lines[i]);
-        if (cols.length < 8) { skipped++; continue; }
-        const date = (cols[0]||'').trim();
-        const typeRaw = (cols[1]||'').trim().toLowerCase();
-        const odo = parseFloat(cols[2]);
-        const amt = parseFloat(cols[7]);
-        if (!date || isNaN(amt)) { skipped++; continue; }
+        const cols = parseCSVLine(lines[i]), row = i + 1;
+        if (cols.length < 8) { bad.push(`Row ${row}: needs at least 8 columns`); continue; }
+        const date = normDate(cols[0] || ''), typeRaw = (cols[1]||'').trim().toLowerCase();
+        const odo = parseFloat(cols[2]), amt = parseFloat(cols[7]), litres = parseFloat(cols[5]) || 0, ppl = parseFloat(cols[6]) || 0;
+        if (!date) { bad.push(`Row ${row}: date "${(cols[0]||'').trim()}" is not valid (use YYYY-MM-DD)`); continue; }
+        if (typeRaw !== 'fuel' && typeRaw !== 'expense') { bad.push(`Row ${row}: type must be fuel or expense`); continue; }
+        if (isNaN(amt) || amt <= 0) { bad.push(`Row ${row}: amount must be a number above 0`); continue; }
+        if (!isNaN(odo) && odo < 0) { bad.push(`Row ${row}: odometer cannot be negative`); continue; }
+        if (typeRaw === 'fuel' && litres <= 0) { bad.push(`Row ${row}: fuel rows need ${ev ? 'kWh' : 'litres'} above 0`); continue; }
+        if (typeRaw === 'fuel' && ppl > 0 && Math.abs(litres * ppl - amt) > amt * 0.15) warn++;
+        const key = `${date}|${typeRaw}|${Math.round(amt)}|${isNaN(odo) ? '' : odo}`;
+        if (seen.has(key)) { dup.push(row); continue; }
+        seen.add(key);
         const id = `csv_${Date.now()}_${i}`;
-
-        if (typeRaw === 'fuel') {
-          appData.logs.push({
-            id, vehicle: appData.settings.activeVehicle, type: 'fuel', date,
-            odo: isNaN(odo) ? undefined : odo, fuel: (cols[3]||(isEV() ? 'Home AC' : 'Petrol')).trim(), station: (cols[4]||'Other').trim(),
-            litres: parseFloat(cols[5]) || 0, ppl: parseFloat(cols[6]) || 0, amt,
-            usage: (cols[8]||'Mixed').trim(), fullTank: (cols[9]||'').trim().toLowerCase() === 'yes',
-            missedPrev: (cols[10]||'').trim().toLowerCase() === 'yes'
-          });
-        } else {
-          appData.logs.push({
-            id, vehicle: appData.settings.activeVehicle, type: 'expense', date,
-            odo: isNaN(odo) ? undefined : odo, category: (cols[3]||'Other').trim(), amt,
-            note: (cols[11]||'').replace(/^"|"$/g,'')
-          });
-        }
-        imported++;
+        if (typeRaw === 'fuel') good.push({ id, vehicle: veh, type: 'fuel', date, odo: isNaN(odo) ? undefined : odo, fuel: (cols[3]||(ev ? 'Home AC' : 'Petrol')).trim(), station: (cols[4]||'Other').trim(), litres, ppl, amt, usage: (cols[8]||'Mixed').trim(), fullTank: (cols[9]||'').trim().toLowerCase() === 'yes', missedPrev: (cols[10]||'').trim().toLowerCase() === 'yes' });
+        else good.push({ id, vehicle: veh, type: 'expense', date, odo: isNaN(odo) ? undefined : odo, category: (cols[3]||'Other').trim(), amt, note: (cols[11]||'').replace(/^"|"$/g,'') });
       }
+      if (!good.length) { showToast(bad.length ? bad[0] : 'Nothing new to import', 'error'); event.target.value = ''; return; }
+      if (bad.length || dup.length) {
+        const msg = `Ready to import ${good.length} row${good.length === 1 ? '' : 's'} into ${veh}.\n` + (dup.length ? `\n${dup.length} duplicate row${dup.length === 1 ? '' : 's'} will be skipped (already logged).` : '') + (bad.length ? `\n${bad.length} invalid row${bad.length === 1 ? '' : 's'} will be skipped:\n- ${bad.slice(0, 5).join('\n- ')}${bad.length > 5 ? `\n- …and ${bad.length - 5} more` : ''}` : '') + '\n\nContinue?';
+        if (!confirm(msg)) { event.target.value = ''; return; }
+      }
+      const before = appData.logs.slice();
+      appData.logs.push(...good);
       save(); refreshUI();
-      showToast(`Imported ${imported} entr${imported===1?'y':'ies'}${skipped ? `, skipped ${skipped}` : ''}`);
+      showToast(`Imported ${good.length} entr${good.length === 1 ? 'y' : 'ies'}${dup.length + bad.length ? `, skipped ${dup.length + bad.length}` : ''}${warn ? `, ${warn} with price × quantity ≠ total` : ''}`, 'ok', () => { appData.logs = before; save(); refreshUI(); showToast('Import undone.'); });
     } catch(err) {
       console.error("CSV import error:", err);
       showToast("Failed to parse CSV", "error");
@@ -3660,6 +3681,8 @@ function renderReminderList() {
     const dueParts = [];
     if (r.dueDate) dueParts.push(`Due ${r.dueDate}`);
     if (r.dueOdo) dueParts.push(`at ${r.dueOdo.toLocaleString()} km`);
+    if (r.repeatKm || r.repeatMonths) dueParts.push('repeats ' + [r.repeatKm ? 'every ' + r.repeatKm.toLocaleString('en-IN') + ' km' : '', r.repeatMonths ? 'every ' + r.repeatMonths + ' mo' : ''].filter(Boolean).join(' / '));
+    if (r.estCost) dueParts.push('~₹' + Math.round(r.estCost).toLocaleString('en-IN'));
     return `
       <div class="alert-card" style="background:var(--bg3);">
         <div class="alert-icon">${icon}</div>
@@ -3674,31 +3697,79 @@ function renderReminderList() {
   }).join('');
 }
 
+
+/* ── SERVICE SCHEDULE: presets, auto-repeat and cost outlook ── */
+const SERVICE_PRESETS = [
+  ['Engine oil & filter', 'Service', 10000, 12], ['Full service', 'Service', 10000, 12], ['Tyre rotation', 'Service', 10000, 6],
+  ['Air filter', 'Service', 20000, 24], ['Brake inspection', 'Service', 20000, 12], ['Coolant change', 'Service', 40000, 24],
+  ['PUC certificate', 'PUC', 0, 6], ['Insurance renewal', 'Insurance', 0, 12]
+];
+(function () { const sel = document.getElementById('remPreset'); if (sel) SERVICE_PRESETS.forEach((p, i) => sel.add(new Option(p[0] + (p[2] ? ` · ${p[2].toLocaleString('en-IN')} km` : '') + ` · ${p[3]} mo`, i))); })();
+function applyRemPreset() {
+  const v = document.getElementById('remPreset').value; if (v === '') return;
+  const [label, type, km, mo] = SERVICE_PRESETS[+v], set = (id, x) => document.getElementById(id).value = x;
+  set('remType', type); set('remLabel', label); set('remRepKm', km || ''); set('remRepMo', mo || '');
+  const hist = appData.logs.filter(l => l.vehicle === appData.settings.activeVehicle && l.type === 'expense' && l.category === (type === 'Service' ? 'Service' : type));
+  if (hist.length) set('remCost', Math.round(hist.reduce((t, l) => t + l.amt, 0) / hist.length / 100) * 100);
+}
+function latestOdoOf(veh) { const o = appData.logs.filter(l => l.vehicle === veh && typeof l.odo === 'number' && !isNaN(l.odo)).map(l => l.odo); return o.length ? Math.max(...o) : null; }
+function addMonths(n) { const d = new Date(); d.setMonth(d.getMonth() + n); return d.toLocaleDateString('en-CA'); }
+function serviceOutlook(veh, kmPerDay) {
+  const odo = latestOdoOf(veh), now = new Date(), items = [];
+  (appData.reminders || []).filter(r => r.vehicle === veh && !r.dismissed).forEach(r => {
+    const d = [];
+    if (r.dueDate) d.push(Math.round((new Date(r.dueDate + 'T00:00:00') - now) / 864e5));
+    if (r.dueOdo && odo !== null) d.push(r.dueOdo <= odo ? -1 : kmPerDay > 0 ? Math.round((r.dueOdo - odo) / kmPerDay) : 9999);
+    if (!d.length) return;
+    items.push({ name: r.label || r.type, days: Math.min(...d), cost: Number(r.estCost) || 0 });
+  });
+  items.sort((a, b) => a.days - b.days);
+  const soon = items.filter(x => x.days <= 90);
+  return { items, soon, total: soon.reduce((t, x) => t + x.cost, 0), noCost: soon.filter(x => !x.cost).length };
+}
+
 function addReminder() {
   const type = document.getElementById('remType').value;
   const label = document.getElementById('remLabel').value.trim();
   const dueDate = document.getElementById('remDueDate').value;
-  const dueOdo = parseFloat(document.getElementById('remDueOdo').value);
-  if (!dueDate && isNaN(dueOdo)) { showToast("Set a due date or due odometer", "error"); return; }
+  let dueOdo = parseFloat(document.getElementById('remDueOdo').value), dueDateV = dueDate;
+  const repKm = parseFloat(document.getElementById('remRepKm').value) || 0, repMo = parseFloat(document.getElementById('remRepMo').value) || 0, estCost = parseFloat(document.getElementById('remCost').value) || 0;
+  const lo = latestOdoOf(appData.settings.activeVehicle);
+  if (isNaN(dueOdo) && repKm && lo !== null) dueOdo = lo + repKm;
+  if (!dueDateV && repMo) dueDateV = addMonths(repMo);
+  if (!dueDateV && isNaN(dueOdo)) { showToast(repKm ? "Log a fill-up first so FuelIQ knows your odometer, or set a due date" : "Set a due date, due odometer or repeat interval", "error"); return; }
   if (!appData.reminders) appData.reminders = [];
   appData.reminders.push({
     id: Date.now().toString(), vehicle: appData.settings.activeVehicle, type,
-    label: label || type, dueDate: dueDate || null, dueOdo: isNaN(dueOdo) ? null : dueOdo, dismissed: false
+    label: label || type, dueDate: dueDateV || null, dueOdo: isNaN(dueOdo) ? null : dueOdo, dismissed: false,
+    repeatKm: repKm || null, repeatMonths: repMo || null, estCost: estCost || null
   });
   save();
-  ['remLabel','remDueDate','remDueOdo'].forEach(id => document.getElementById(id).value = '');
+  ['remLabel','remDueDate','remDueOdo','remRepKm','remRepMo','remCost','remPreset'].forEach(id => document.getElementById(id).value = '');
   renderReminderList(); refreshUI();
   showToast("Reminder added");
 }
 
 function deleteReminder(id) {
-  appData.reminders = (appData.reminders || []).filter(r => r.id !== id);
+  const all = (appData.reminders || []).slice(), r = all.find(x => x.id === id); if (!r) return;
+  appData.reminders = all.filter(x => x.id !== id);
   save(); renderReminderList(); refreshUI();
+  showToast("Reminder deleted.", 'ok', () => { appData.reminders = all; save(); renderReminderList(); refreshUI(); });
 }
 
 function markReminderDone(id) {
   const r = (appData.reminders || []).find(r => r.id === id);
-  if (r) { r.dismissed = true; save(); renderReminderList(); refreshUI(); showToast("Marked done"); }
+  if (!r) return;
+  const prev = JSON.stringify(appData.reminders);
+  r.dismissed = true;
+  let next = '';
+  if (r.repeatKm || r.repeatMonths) {
+    const lo = latestOdoOf(r.vehicle), base = lo !== null ? Math.max(lo, 0) : (r.dueOdo || 0);
+    appData.reminders.push({ ...r, id: Date.now().toString() + 'n', dismissed: false, dueOdo: r.repeatKm ? base + r.repeatKm : null, dueDate: r.repeatMonths ? addMonths(r.repeatMonths) : null });
+    next = ' Next one scheduled.';
+  }
+  save(); renderReminderList(); refreshUI();
+  showToast("Marked done." + next, 'ok', () => { appData.reminders = JSON.parse(prev); save(); renderReminderList(); refreshUI(); });
 }
 
 
@@ -4145,6 +4216,66 @@ async function processReceipt(event) {
 }
 
 window.onload = () => { setupChartTabs(); setupMainTabs(); init(); };
+
+/* ── WHATSAPP ALERTS ──
+   Two ways to deliver, both set up from Settings → WhatsApp alerts:
+   1) Tap-to-send (default, no account needed): opens WhatsApp with the digest ready; you press Send.
+   2) Automatic via the free CallMeBot service (personal use): needs its API key. Messages then pass through that
+      third-party service, and the digest is sent once a day when FuelIQ is open and something is due.
+   The number and key live only in this browser (own localStorage key); they are never part of appData,
+   so they are not saved to Google Drive or included in backups. */
+const WA_KEY = 'fueliq_whatsapp';
+try { localStorage.removeItem('fueliq_telegram'); } catch (e) {}
+function waCfg() { try { const c = JSON.parse(localStorage.getItem(WA_KEY) || 'null'); return c && c.phone ? c : null; } catch (e) { return null; } }
+function waLabel() { const el = document.getElementById('menuWa'), c = waCfg(); if (el) el.textContent = c ? (c.key ? 'Auto' : 'On') : 'Off'; }
+function waDigits(n) { return String(n).replace(/\D/g, ''); }
+function waSendAuto(text) {
+  const c = waCfg(); if (!c || !c.key) return false;
+  fetch(`https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent('+' + waDigits(c.phone))}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(c.key)}`, { mode: 'no-cors' }).catch(() => {});
+  return true;   // no-cors: the browser cannot read the reply, so this means "request sent"
+}
+function waSend(text) {
+  const c = waCfg(); if (!c) return 'none';
+  if (c.key) { waSendAuto(text); return 'auto'; }
+  window.open(`https://wa.me/${waDigits(c.phone)}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+  return 'link';
+}
+function promptWhatsApp() {
+  document.getElementById('settingsMenu').classList.remove('show');
+  const cur = waCfg();
+  const phone = prompt('Your WhatsApp number with country code, e.g. +91XXXXXXXXXX.\nLeave blank to turn WhatsApp alerts off.\n\nStored only on this device.', cur ? cur.phone : '');
+  if (phone === null) return;
+  if (!phone.trim()) { localStorage.removeItem(WA_KEY); waLabel(); showToast('WhatsApp alerts turned off'); return; }
+  if (waDigits(phone).length < 8) { showToast('Enter the number with country code', 'error'); return; }
+  const key = prompt('Optional: CallMeBot API key for AUTOMATIC messages.\n\nLeave blank to use tap-to-send instead (WhatsApp opens with the message ready).\nGet a key at callmebot.com/blog/free-api-whatsapp-messages. Messages then pass through that third-party service.', cur && cur.key ? cur.key : '');
+  if (key === null) return;
+  localStorage.setItem(WA_KEY, JSON.stringify({ phone: phone.trim(), key: key.trim() }));
+  waLabel();
+  const mode = waSend('✅ FuelIQ is connected. Reminders and summaries will come here.');
+  showToast(mode === 'auto' ? 'Test message requested. It can take a few seconds. Nothing arriving means the key is wrong.' : 'WhatsApp opened. Press Send to finish the test.');
+}
+function waDigestText() {
+  const inr = v => '₹' + Math.round(v).toLocaleString('en-IN'), cm = new Date().toLocaleDateString('en-CA').slice(0, 7), out = [];
+  (appData.vehicles || []).forEach(v => {
+    const al = computeAlerts(v), spent = appData.logs.filter(l => l.vehicle === v && l.date.startsWith(cm)).reduce((t, l) => t + l.amt, 0);
+    if (!al.length && !spent) return;
+    out.push(`🚗 *${v}*`, `This month: ${inr(spent)}`);
+    al.forEach(a => out.push(`${a.type === 'overdue' ? '🔴' : '🟡'} ${a.text}${a.sub ? ' (' + a.sub + ')' : ''}`));
+    out.push('');
+  });
+  return { text: out.join('\n').trim(), hasAlerts: (appData.vehicles || []).some(v => computeAlerts(v).length) };
+}
+function sendWaDigest(manual) {
+  const c = waCfg();
+  if (!c) { if (manual) showToast('Set up WhatsApp first (Settings → WhatsApp alerts)', 'error'); return; }
+  const d = waDigestText();
+  if (!manual && (!c.key || !d.hasAlerts)) return;   // automatic sending needs the CallMeBot key
+  if (!d.text) { if (manual) showToast('Nothing to report yet', 'error'); return; }
+  const mode = waSend('⛽ *FuelIQ digest*\n\n' + d.text);
+  if (mode === 'auto') localStorage.setItem('fueliq_wa_last', new Date().toLocaleDateString('en-CA'));
+  if (manual) showToast(mode === 'auto' ? 'Digest requested. It should arrive in a few seconds.' : 'WhatsApp opened. Press Send.');
+}
+window.addEventListener('load', () => setTimeout(() => { waLabel(); if (localStorage.getItem('fueliq_wa_last') !== new Date().toLocaleDateString('en-CA')) sendWaDigest(false); }, 2500));
 </script>
 <footer style="text-align:center;padding:24px 16px 32px;font-size:13px;color:var(--text3);">
   <span>FuelIQ</span> &middot;
