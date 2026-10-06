@@ -4106,6 +4106,137 @@ function loadTesseractScript() {
   });
 }
 
+/* ── Receipt text parser (pure function) ── */
+/* Pure parser: OCR text -> fields. Kept free of DOM access so it can be tested on its own. */
+function parseReceiptText(raw) {
+  const res = { date: null, litres: null, rate: null, amount: null, odo: null, station: null, fuel: null, consistent: false };
+  const text = String(raw || '').replace(/\r/g, '');
+  // Comma used as a decimal mark by OCR ("113,54") -> "113.54"; leaves "3,230.21" and "1,41,884" alone.
+  const lines = text.split('\n').map(s => s.trim().replace(/(\d),(\d{1,2})(?![\d,])/g, '$1.$2')).filter(Boolean);
+  const toNum = s => parseFloat(String(s).replace(/,/g, ''));
+  const decimals = s => (s.match(/\d[\d,]*\.\d+/g) || []).map(toNum);
+
+  /* ── Date ── */
+  const MONTHS = { jan:1, feb:2, mar:3, apr:4, may:5, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12 };
+  const fixPart = (s, max) => {                         // OCR often reads 0 as 6 (and 2 as 3)
+    const tries = [s, s.replace(/6/g, '0'), s.replace(/^3/, '2'), s.replace(/6/g, '0').replace(/^3/, '2')];
+    for (const t of tries) { const n = parseInt(t, 10); if (n >= 1 && n <= max) return n; }
+    return null;
+  };
+  const mkDate = (d, m, y) => {
+    let yr = parseInt(y, 10); if (String(y).length === 2) yr += 2000;
+    if (!(yr >= 2000 && yr <= 2100) || !(d >= 1 && d <= 31) || !(m >= 1 && m <= 12)) return null;
+    return `${yr}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  };
+  const dateScan = src => {
+    const t = src.replace(/([a-z])0|0([a-z])/gi, (m0, a, b) => (a ? a + 'o' : 'o' + b)); // "0ct" -> "oct"
+    let m = t.match(/(\d{1,2})\s*[\/\-.]\s*(\d{1,2})\s*[\/\-.]\s*(\d{4}|\d{2})(?!\d)/);
+    if (m) { const d = fixPart(m[1], 31), mo = fixPart(m[2], 12); if (d && mo) { const r = mkDate(d, mo, m[3]); if (r) return r; } }
+    m = t.match(/(\d{1,2})\s*[\s\-\/.]?\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s*[\-\/.,]?\s*(\d{4}|\d{2})(?!\d)/i);
+    if (m) { const d = fixPart(m[1], 31); if (d) return mkDate(d, MONTHS[m[2].toLowerCase()], m[3]); }
+    return null;
+  };
+  const dateLine = lines.find(l => /date|dt\b/i.test(l) && dateScan(l));
+  res.date = dateLine ? dateScan(dateLine) : dateScan(lines.join('\n'));
+
+  /* ── Labelled numbers (line by line, so "Rs." on the rate line can't leak into the amount) ── */
+  const lab = { litres: null, rate: null, amount: null };
+  const inRange = { litres: n => n >= 0.5 && n <= 200, rate: n => n >= 40 && n <= 250, amount: n => n >= 20 && n <= 100000 };
+  const classify = l => {
+    if (/rate|price|\/\s*(?:l|ltr|litre)s?\b/i.test(l)) return 'rate';
+    if (/volume|\bvol\b|qty|quantity|litres?|liters?|\bltrs?\b/i.test(l)) return 'litres';
+    if (/amount|\bamt\b|total|payable|\bnet\b|\bsale\b/i.test(l)) return 'amount';
+    return null;
+  };
+  const firstIn = (s, type) => {
+    // Strip a "(L)" / "Rs." / "/L" marker so only real values remain, then take the first plausible decimal.
+    return decimals(s.replace(/\/\s*(?:l|ltr)s?\b/ig, ' ')).find(inRange[type]) ?? null;
+  };
+  lines.forEach((l, i) => {
+    const type = classify(l); if (!type || lab[type] != null) return;
+    const afterLabel = l.replace(/^.*?(rate|price|volume|\bvol\b|qty|quantity|litres?|liters?|\bltrs?\b|amount|\bamt\b|total|payable|\bnet\b|\bsale\b)[^\d]*?(?=[\sRs.:\-₹]|$)/i, '');
+    let v = firstIn(afterLabel, type);
+    if (v == null) v = firstIn(l, type);
+    if (v == null && lines[i + 1] && !classify(lines[i + 1])) v = firstIn(lines[i + 1], type);
+    if (v != null) lab[type] = v;
+  });
+
+  /* ── Reconcile: litres × rate should equal amount ── */
+  const close = (l, p, a) => Math.abs(l * p - a) <= Math.max(1.5, a * 0.006);
+  let { litres: l, rate: p, amount: a } = lab;
+  if (l != null && p != null && a != null && close(l, p, a)) { res.consistent = true; }
+  else {
+    // Search every number on the receipt for a triple that multiplies out; prefer ones overlapping the labelled values.
+    const all = [...new Set(decimals(lines.join('\n')))];
+    let best = null, bestScore = -1;
+    for (const pp of all.filter(inRange.rate)) for (const ll of all.filter(inRange.litres)) for (const aa of all.filter(inRange.amount)) {
+      if (ll === pp || !close(ll, pp, aa)) continue;
+      const sc = (ll === l) + (pp === p) + (aa === a);
+      if (sc > bestScore) { best = [ll, pp, aa]; bestScore = sc; }
+    }
+    if (best) { [l, p, a] = best; res.consistent = true; }
+    else if (l != null && p != null && a == null) { a = +(l * p).toFixed(2); res.consistent = true; }
+    else if (l != null && a != null && p == null && a / l >= 40 && a / l <= 250) { p = +(a / l).toFixed(2); res.consistent = true; }
+    else if (p != null && a != null && l == null && a / p >= 0.5) { l = +(a / p).toFixed(2); res.consistent = true; }
+  }
+  res.litres = l; res.rate = p; res.amount = a;
+
+  /* ── Odometer (only when the receipt prints one) ── */
+  for (let i = 0; i < lines.length; i++) {
+    if (!/odo|km\.?\s*read/i.test(lines[i])) continue;
+    const m = (lines[i].replace(/^.*?(odo\w*|km\.?\s*read\w*)/i, '') + ' ' + (lines[i + 1] || '')).match(/\d[\d,]{0,7}/);
+    const n = m ? parseInt(m[0].replace(/,/g, ''), 10) : NaN;
+    if (n >= 1 && n <= 999999) { res.odo = n; break; }
+  }
+
+  /* ── Station ── */
+  const upper = text.toUpperCase();
+  const stationMap = [
+    [/BHARAT\s*PETROLEUM|BPCL/, 'BPCL'], [/INDIAN\s*OI|IOCL|\bIOC\b|INDIANOIL/, 'IOCL'],
+    [/HINDUSTAN\s*PETROLEUM|HPCL/, 'HPCL'], [/JIO[\s\-_]?BP/, 'Jio-bp'],
+    [/SHELL/, 'Shell'], [/ESSAR|NAYARA/, 'Essar']
+  ];
+  for (const [re, v] of stationMap) if (re.test(upper)) { res.station = v; break; }
+
+  /* ── Fuel type: read the product line first, so a station called "… PETROL PUMP" can't fool it ── */
+  const fuelMap = [
+    [/\bHSD\b|DIESEL/, 'Diesel'],
+    [/\bXP\b|SPEED|PREMIUM|XTRAMILE|TURBOJET|POWER\s*(?:95|99|100|PETROL|FUEL)/, 'Premium'],
+    [/\bCNG\b/, 'CNG'],
+    [/\bMS\b|PETROL|MOTOR\s*SPIRIT/, 'Petrol']
+  ];
+  const pickFuel = s => { for (const [re, v] of fuelMap) if (re.test(s)) return v; return null; };
+  const prodLine = lines.find(l => /product|fuel|item|grade|descr/i.test(l) && pickFuel(l.toUpperCase()));
+  res.fuel = prodLine ? pickFuel(prodLine.toUpperCase()) : pickFuel(upper);
+
+  res.score = ['date','litres','rate','amount','odo','station','fuel'].filter(k => res[k] != null).length + (res.consistent ? 3 : 0);
+  return res;
+}
+
+/* Shrinks big phone photos / enlarges small images, converts to greyscale and stretches contrast —
+   this makes Tesseract noticeably more accurate on receipts. Falls back to the raw file on any problem. */
+async function preprocessReceiptImage(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const longSide = Math.max(bmp.width, bmp.height);
+    const scale = longSide > 2200 ? 2200 / longSide : (bmp.width < 1000 ? 1000 / bmp.width : 1);
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * scale); c.height = Math.round(bmp.height * scale);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bmp, 0, 0, c.width, c.height);
+    const img = ctx.getImageData(0, 0, c.width, c.height), d = img.data, hist = new Uint32Array(256);
+    for (let i = 0; i < d.length; i += 4) { const g = (d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114) | 0; d[i] = d[i+1] = d[i+2] = g; hist[g]++; }
+    const total = c.width * c.height; let lo = 0, hi = 255, acc = 0;
+    for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc > total * 0.01) { lo = v; break; } }
+    acc = 0;
+    for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc > total * 0.01) { hi = v; break; } }
+    const span = Math.max(hi - lo, 1);
+    for (let i = 0; i < d.length; i += 4) { const v = Math.max(0, Math.min(255, ((d[i] - lo) * 255 / span) | 0)); d[i] = d[i+1] = d[i+2] = v; }
+    ctx.putImageData(img, 0, 0);
+    return await new Promise(res => c.toBlob(b => res(b || file), 'image/png'));
+  } catch (e) { return file; }
+}
+
 async function processReceipt(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -4131,73 +4262,40 @@ async function processReceipt(event) {
 
   try {
     const worker = await Tesseract.createWorker('eng');
-    const ret = await worker.recognize(file);
-    const text = ret.data.text;
-    await worker.terminate();
+    const input = await preprocessReceiptImage(file);
 
-    console.log("Extracted Text:\n", text);
+    // Receipts read best as one block of text (mode 6). If that doesn't give a consistent
+    // litres × rate = amount, try "sparse text" (mode 11), which copes better with odd layouts.
+    const texts = []; let best = null;
+    for (const psm of ['6', '11']) {
+      await worker.setParameters({ tessedit_pageseg_mode: psm, preserve_interword_spaces: '1' });
+      const ret = await worker.recognize(input);
+      texts.push(ret.data.text);
+      const r = parseReceiptText(ret.data.text);
+      if (!best || r.score > best.score) best = r;
+      if (best.consistent && best.date && best.fuel) break;
+    }
+    if (!best.consistent && texts.length > 1) {          // last resort: pool both readings
+      const pooled = parseReceiptText(texts.join('\n'));
+      if (pooled.score > best.score) best = pooled;
+    }
+    await worker.terminate();
+    console.log("Extracted Text:\n", texts.join('\n------\n'), "\nParsed:", best);
 
     const found = [];
-
-    // ── Date: DD-MM-YYYY, DD/MM/YY, DD.MM.YYYY ──
-    const dateMatch = text.match(/(\d{2})[\/\-.](\d{2})[\/\-.](\d{2,4})/);
-    if (dateMatch) {
-      const year = dateMatch[3].length === 2 ? '20' + dateMatch[3] : dateMatch[3];
-      const d = new Date(`${year}-${dateMatch[2]}-${dateMatch[1]}`);
-      if (!isNaN(d.getTime())) {
-        document.getElementById('fDate').value = `${year}-${dateMatch[2]}-${dateMatch[1]}`;
-        found.push('date');
-      }
-    }
-
-    // ── Volume / litres ── (handles Volume, Vol, Qty, Quantity, Ltr(s), Litre(s))
-    const volMatch = text.match(/(?:Volume|Vol|Qty|Quantity|Ltrs?|Lt\.?|Litres?)\s*[:\-]?\s*(\d{1,3}\.\d{1,3})/i);
-    if (volMatch) { document.getElementById('fLitres').value = parseFloat(volMatch[1]).toFixed(2); found.push('litres'); }
-
-    // ── Price per litre ── (handles Rate/Ltr, Unit Price, Rate, Price)
-    const rateMatch = text.match(/(?:Rate\s*\/?\s*Ltr|Unit\s*Price|Rate|Price)\s*[:\-]?\s*(?:Rs\.?|₹|INR)?\s*(\d{2,3}\.\d{1,2})/i);
-    if (rateMatch) { document.getElementById('fPpl').value = parseFloat(rateMatch[1]).toFixed(2); found.push('rate'); }
-
-    // ── Total amount ── (handles Net Amount, Grand Total, Amount Payable, Amount, Total, Rs., ₹)
-    const amtMatch = text.match(/(?:Net\s*Amount|Grand\s*Total|Amount\s*Payable|Total\s*Amount|Amount|Total|INR|Rs\.?|₹)\s*[:\-]?\s*([\d,]+\.\d{2})/i);
-    if (amtMatch) { document.getElementById('fAmt').value = parseFloat(amtMatch[1].replace(/,/g, '')).toFixed(2); found.push('amount'); }
-
-    // Fill in whichever of litres/rate/amount is still missing, when the other two are known.
-    const l = parseFloat(document.getElementById('fLitres').value);
-    const p = parseFloat(document.getElementById('fPpl').value);
-    const a = parseFloat(document.getElementById('fAmt').value);
-    if (!(l > 0) && p > 0 && a > 0) document.getElementById('fLitres').value = (a / p).toFixed(2);
-    else if (!(p > 0) && l > 0 && a > 0) document.getElementById('fPpl').value = (a / l).toFixed(2);
-    else if (!(a > 0) && l > 0 && p > 0) document.getElementById('fAmt').value = (l * p).toFixed(2);
-
-    // ── Fuel station brand ──
-    const upper = text.toUpperCase();
-    const stationMap = [
-      [/BHARAT\s*PETROLEUM|BPCL/, 'BPCL'],
-      [/INDIAN\s*OIL|IOCL|\bIOC\b/, 'IOCL'],
-      [/HINDUSTAN\s*PETROLEUM|HPCL/, 'HPCL'],
-      [/JIO[\s\-]?BP/, 'Jio-bp'],
-      [/SHELL/, 'Shell'],
-      [/ESSAR|NAYARA/, 'Essar']
-    ];
-    for (const [re, val] of stationMap) {
-      if (re.test(upper)) { document.getElementById('fStation').value = val; found.push('station'); break; }
-    }
-
-    // ── Fuel type ── (Indian receipts often abbreviate: MS = petrol, HSD = diesel)
-    const fuelMap = [
-      [/\bHSD\b|DIESEL/, 'Diesel'],
-      [/\bXP\b|SPEED|PREMIUM|POWER\s*(PETROL|FUEL)?/, 'Premium'],
-      [/\bCNG\b/, 'CNG'],
-      [/\bMS\b|PETROL|MOTOR\s*SPIRIT/, 'Petrol']
-    ];
-    for (const [re, val] of fuelMap) {
-      if (re.test(upper)) { document.getElementById('fFuelType').value = val; found.push('fuel type'); break; }
-    }
+    if (best.date)    { document.getElementById('fDate').value = best.date; found.push('date'); }
+    if (best.odo)     { document.getElementById('fOdo').value = best.odo; found.push('odometer'); }
+    if (best.litres != null) { document.getElementById('fLitres').value = best.litres.toFixed(2); found.push('litres'); }
+    if (best.rate != null)   { document.getElementById('fPpl').value = best.rate.toFixed(2); found.push('rate'); }
+    if (best.amount != null) { document.getElementById('fAmt').value = best.amount.toFixed(2); found.push('amount'); }
+    if (best.station) { document.getElementById('fStation').value = best.station; found.push('station'); }
+    if (best.fuel)    { document.getElementById('fFuelType').value = best.fuel; found.push('fuel type'); }
 
     if (found.length) {
-      statusEl.textContent = `Scan complete! Auto-filled: ${found.join(', ')}. Please check the numbers, then Save Entry.`;
-      statusEl.style.color = "var(--green)";
+      const unsure = (best.litres != null && best.rate != null && best.amount != null && !best.consistent);
+      statusEl.textContent = `Scan complete! Auto-filled: ${found.join(', ')}.` +
+        (unsure ? " ⚠ Litres × rate doesn't match the amount — please check the numbers." : " Please check the numbers, then Save Entry.");
+      statusEl.style.color = unsure ? "var(--amber)" : "var(--green)";
       showToast("Receipt parsed — review and save.");
     } else {
       statusEl.textContent = "Couldn't confidently read that receipt — please enter the details manually.";
